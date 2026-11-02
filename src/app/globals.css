@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-leaf-50: #f0faf3;
+  --color-leaf-100: #dcf3e3;
+  --color-leaf-200: #b8e6c7;
+  --color-leaf-300: #86d19f;
+  --color-leaf-400: #4fb574;
+  --color-leaf-500: #2e9a57;
+  --color-leaf-600: #217c44;
+  --color-leaf-700: #1c6338;
+  --color-leaf-800: #194f2f;
+  --color-leaf-900: #143f27;
+  --color-leaf-950: #0a2415;
+
+  --color-sun-100: #fff4cc;
+  --color-sun-300: #ffd95c;
+  --color-sun-500: #f5b700;
+  --color-sun-700: #a87a00;
+
+  --color-lagoon-100: #d6f1f2;
+  --color-lagoon-500: #0e8f99;
+  --color-lagoon-700: #0b6a72;
+
+  --color-paper: #f6f8f3;
+  --color-ink: #12261a;
+
+  --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Fredoka", "Nunito", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Large, finger-friendly number inputs without browser spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: white !important;
+  }
+  .print-plain {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
