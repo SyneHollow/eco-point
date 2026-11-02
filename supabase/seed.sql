@@ -3,7 +3,7 @@
 -- The slug must match NEXT_PUBLIC_SCHOOL_SLUG in the app's environment.
 
 insert into public.schools (slug, name, timezone)
-values ('school', 'Your School Name', 'Asia/Dubai')
+values ('school', 'Credence High School', 'Asia/Dubai')
 on conflict (slug) do nothing;
 
 -- Grades 7 and 8, sections A–D, 30 students each (edit in Teacher → Classes).

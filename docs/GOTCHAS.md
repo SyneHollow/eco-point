@@ -10,3 +10,5 @@
 8. **"Today" comes from the database** in the school's time zone (`schools.timezone`, default Asia/Dubai), never from the server clock.
 9. **Login rate limiting:** monitor/teacher sign-in goes through a server action, so Supabase's per-IP auth limits see Vercel's IP, not the student's. Low risk for a pilot (a class login only reaches eco points), but if this goes wider, add attempt throttling or move sign-in to the browser client.
 10. **Server-action success messages vanish** when the action changes what the page shows (e.g. closing a month replaces the button with the result). That's expected.
+11. **`NEXT_PUBLIC_SCHOOL_SLUG` is the school's short code (`school` from seed.sql), not its name.** The name ("Credence High School") lives in the database and is changed in Teacher → Settings or with `update public.schools set name = … where slug = 'school'`. The code must match `^[a-z0-9-]{2,40}$`.
+12. **Windows + Node scripts:** don't call `process.exit()` right after closing a readline interface. Node can crash with `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`. Set `process.exitCode` and return instead (as `scripts/create-teacher.mjs` does).
