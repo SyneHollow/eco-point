@@ -1,7 +1,7 @@
 import "server-only";
 import { createPublicClient } from "@/lib/supabase/server";
 import { SCHOOL_SLUG } from "@/lib/config";
-import type { Champion, Impact, LeaderRow, School } from "@/lib/types";
+import type { AiSummary, Champion, Impact, LeaderRow, School } from "@/lib/types";
 
 // Public (no login) reads. Each RPC returns aggregates only.
 
@@ -46,4 +46,16 @@ export function rerank(rows: LeaderRow[]): LeaderRow[] {
     lastRank = rank;
     return { ...r, rank };
   });
+}
+
+export async function getAiSummary(from: string, to: string): Promise<AiSummary | null> {
+  const { data, error } = await createPublicClient().rpc("get_ai_summary", { p_slug: SCHOOL_SLUG, p_from: from, p_to: to });
+  if (error) throw new Error(`get_ai_summary: ${error.message}`);
+  return (data as AiSummary) ?? null;
+}
+
+export async function getChallenges(weekStart: string): Promise<Array<{ class_id: string; class_name: string; text: string }>> {
+  const { data, error } = await createPublicClient().rpc("get_challenges", { p_slug: SCHOOL_SLUG, p_week_start: weekStart });
+  if (error) throw new Error(`get_challenges: ${error.message}`);
+  return data ?? [];
 }

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { LeaderList, Podium } from "@/components/leaderboard";
 import { Banner, cx, Footer, SdgChips } from "@/components/ui";
-import { getChampions, getImpact, getLeaderboard, getSchool, rerank } from "@/lib/public-data";
+import { getAiSummary, getChampions, getImpact, getLeaderboard, getSchool, rerank } from "@/lib/public-data";
 import { fmtDay, fmtLongDay, fmtMonth, periodRange, type Period } from "@/lib/dates";
-import { num, pct, pts } from "@/lib/format";
+import { num, pct, plural, pts } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Leaderboard" };
@@ -18,7 +18,12 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   if (!school) return <p className="p-8">School not set up.</p>;
 
   const range = periodRange(period, school.today);
-  const [all, impact, champions] = await Promise.all([getLeaderboard(range.from, range.to), getImpact(range.from, range.to), getChampions()]);
+  const [all, impact, champions, ai] = await Promise.all([
+    getLeaderboard(range.from, range.to),
+    getImpact(range.from, range.to),
+    getChampions(),
+    getAiSummary(range.from, range.to),
+  ]);
   const grades = [...new Set(all.map((r) => r.grade))].sort((a, b) => a - b);
   const grade = grades.includes(Number(sp.grade)) ? Number(sp.grade) : null;
   const rows = grade ? rerank(all.filter((r) => r.grade === grade)) : all;
@@ -81,7 +86,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             <div className="space-y-3 rounded-2xl bg-leaf-800 p-5 text-white">
               <h2 className="font-display text-xl font-semibold">Together, {range.label.toLowerCase()}</h2>
               <p className="text-sm text-leaf-200">
-                From {num(impact.entries)} daily class checks and {num(impact.audits)} peer checks.
+                From {plural(impact.entries, "daily class check")} and {plural(impact.audits, "peer check")}.
               </p>
               <ul className="space-y-2">
                 {impact.items.map((it) => (
@@ -92,13 +97,22 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2 text-xs text-leaf-200">
                       <span>
-                        {it.input_type === "count" ? `${num(it.total)} times` : `${num(it.total)} of ${num(it.answers)} checks passed`}
+                        {it.input_type === "count" ? plural(it.total, "time") : `${num(it.total)} of ${plural(it.answers, "check")} passed`}
                       </span>
                       <SdgChips sdgs={it.sdgs} />
                     </div>
                   </li>
                 ))}
               </ul>
+              {ai && ai.bin_checks > 0 && ai.per_10_students !== null && (
+                <div className="rounded-xl bg-lagoon-700/50 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-bold">Plastic in class bins (AI-checked)</span>
+                    <span className="tabular font-display text-2xl font-bold text-sun-300">{ai.per_10_students}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-leaf-200">plastic items per 10 students, from {plural(ai.bin_checks, "bin photo")} · lower is better</div>
+                </div>
+              )}
             </div>
           )}
         </div>

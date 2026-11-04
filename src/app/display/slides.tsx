@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { LeaderList, Podium } from "@/components/leaderboard";
 import { cx } from "@/components/ui";
-import type { Champion, Impact, LeaderRow } from "@/lib/types";
+import type { AiSummary, Champion, Impact, LeaderRow } from "@/lib/types";
 import { fmtMonth } from "@/lib/dates";
-import { num, pct, pts } from "@/lib/format";
+import { num, pct, plural, pts } from "@/lib/format";
 
 const SLIDE_SECONDS = 12;
 
@@ -15,12 +15,16 @@ export function DisplaySlides({
   weekRows,
   impact,
   champion,
+  ai,
+  challenges,
 }: {
   monthLabel: string;
   monthRows: LeaderRow[];
   weekRows: LeaderRow[];
   impact: Impact | null;
   champion: Champion | null;
+  ai: AiSummary | null;
+  challenges: Array<{ class_id: string; class_name: string; text: string }>;
 }) {
   const slides: Array<{ key: string; node: React.ReactNode }> = [
     {
@@ -62,14 +66,40 @@ export function DisplaySlides({
                 <div className="font-display text-8xl font-bold text-sun-300">{pct(it.pct)}</div>
                 <div className="mt-3 text-3xl font-bold">{it.label}</div>
                 <div className="mt-2 text-xl text-leaf-200">
-                  {it.input_type === "count" ? `${num(it.total)} times this month` : `${num(it.total)} of ${num(it.answers)} checks passed`}
+                  {it.input_type === "count" ? `${plural(it.total, "time")} this month` : `${num(it.total)} of ${plural(it.answers, "check")} passed`}
                 </div>
               </div>
             ))}
           </div>
+          {ai && ai.bin_checks > 0 && ai.per_10_students !== null && (
+            <div className="mt-6 flex items-center gap-8 rounded-3xl bg-lagoon-700/40 p-8">
+              <div className="font-display text-8xl font-bold text-sun-300">{ai.per_10_students}</div>
+              <div>
+                <div className="text-3xl font-bold">plastic items per 10 students in class bins</div>
+                <div className="mt-2 text-xl text-leaf-200">Counted by the AI referee from {plural(ai.bin_checks, "bin photo")}. Lower is better!</div>
+              </div>
+            </div>
+          )}
           <p className="mt-10 text-center text-3xl text-leaf-200">
-            {num(impact.eco_actions)} eco actions logged from {num(impact.entries)} class checks
+            {plural(impact.eco_actions, "eco action")} logged from {plural(impact.entries, "class check")}
           </p>
+        </Slide>
+      ),
+    });
+  }
+  if (challenges.length > 0) {
+    slides.push({
+      key: "challenges",
+      node: (
+        <Slide title="This week's challenges">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {challenges.map((c) => (
+              <div key={c.class_id} className="flex items-center gap-6 rounded-3xl bg-white/5 px-6 py-5">
+                <span className="font-display w-24 text-5xl font-bold text-sun-300">{c.class_name}</span>
+                <span className="text-2xl font-semibold">{c.text}</span>
+              </div>
+            ))}
+          </div>
         </Slide>
       ),
     });

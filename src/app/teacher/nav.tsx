@@ -8,6 +8,8 @@ const LINKS = [
   ["/teacher", "Dashboard"],
   ["/teacher/classes", "Classes & PINs"],
   ["/teacher/activity", "Daily records"],
+  ["/teacher/ai", "AI checks & flags"],
+  ["/teacher/assistant", "Ask EcoPoints"],
   ["/teacher/points", "Bonus points"],
   ["/teacher/month", "Month close & reports"],
   ["/teacher/criteria", "Checklist"],

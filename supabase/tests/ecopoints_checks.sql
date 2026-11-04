@@ -331,5 +331,146 @@ do $$ declare r jsonb; begin
 end $$;
 reset role;
 
+-- ---------------------------------------------- 13. AI photo checks (v2) ----
+-- 13a. A signed-in monitor can't write an AI result directly
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
+do $$ begin
+  begin perform public.svc_record_ai_check(auth.uid(), 'bin', '{"plastic_items":0,"wrong_bin_items":0,"confidence":1}', 'x', 'y');
+  exception when insufficient_privilege then return; end;
+  raise exception 'CHECK FAILED: a monitor could record an AI result directly';
+end $$;
+-- 7A submits a "perfect" day: 30 of 30 plastic-free
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+do $$ begin perform public.submit_daily_entry(30, '{"plastic_free_lunch":30,"reusable_bottle":10}'); end $$;
+reset role;
+
+-- 13b. The server (service role) records results
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+do $$ declare r jsonb; begin
+  -- 8A: 28 present, 20 plastic-free → 8 plastic lunches; 9 items is plausible → not flagged
+  -- points = 10 × (1 − 9 / (28 × 0.5)) = 3.57
+  r := public.svc_record_ai_check('a0000000-0000-4000-8000-000000000004', 'bin',
+         '{"plastic_items":9,"wrong_bin_items":1,"confidence":0.8,"items":[{"label":"wrapper","kind":"plastic"}],"summary":"9 wrappers"}', 'mock', 'mock-1');
+  if (r ->> 'points')::numeric <> 3.57 or (r ->> 'flagged')::boolean then
+    raise exception 'CHECK FAILED: 8A bin check should score 3.57 unflagged, got %', r;
+  end if;
+  -- 7A claimed 30/30 plastic-free; 9 plastic items in the bin → AI referee flags it; points = 10 × (1 − 9/15) = 4.00
+  r := public.svc_record_ai_check('a0000000-0000-4000-8000-000000000002', 'bin',
+         '{"plastic_items":9,"wrong_bin_items":0,"confidence":0.9,"items":[],"summary":"bottles and wrappers"}', 'mock', 'mock-1');
+  if (r ->> 'points')::numeric <> 4.00 or not (r ->> 'flagged')::boolean then
+    raise exception 'CHECK FAILED: 7A bin check should be flagged at 4.00 pts, got %', r;
+  end if;
+  -- 8A's peer check said lights were off; the room photo shows them on → flagged, no points
+  r := public.svc_record_ai_check('a0000000-0000-4000-8000-000000000004', 'room',
+         '{"lights_on":true,"litter_level":1,"bin_overflowing":false,"confidence":0.9,"items":[],"summary":"lights on"}', 'mock', 'mock-1');
+  if not (r ->> 'flagged')::boolean or (r ->> 'points')::numeric <> 0 then
+    raise exception 'CHECK FAILED: room check should flag the lights, got %', r;
+  end if;
+end $$;
+do $$ begin  -- second bin check same day
+  begin perform public.svc_record_ai_check('a0000000-0000-4000-8000-000000000004', 'bin', '{"plastic_items":0,"wrong_bin_items":0,"confidence":1}', 'mock', 'mock-1');
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: a second bin check on the same day was accepted';
+end $$;
+do $$ begin  -- room photo before doing the peer check (7A hasn't checked anyone today)
+  begin perform public.svc_record_ai_check('a0000000-0000-4000-8000-000000000002', 'room', '{"lights_on":false,"litter_level":0,"confidence":1}', 'mock', 'mock-1');
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: room photo accepted without a peer check';
+end $$;
+do $$ begin  -- bin check before the class check (school B's 7A has no entry)
+  begin perform public.svc_record_ai_check('b0000000-0000-4000-8000-000000000002', 'bin', '{"plastic_items":0,"wrong_bin_items":0,"confidence":1}', 'mock', 'mock-1');
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: bin check accepted before the class check';
+end $$;
+do $$ begin  -- nonsense counts (7B has a class check today, so only the count can fail)
+  begin perform public.svc_record_ai_check('a0000000-0000-4000-8000-000000000003', 'bin', '{"plastic_items":-4,"wrong_bin_items":0,"confidence":1}', 'mock', 'mock-1');
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: negative AI count accepted';
+end $$;
+reset role;
+
+-- 13c. Stored AI results can't be edited
+do $$ begin
+  begin update public.ai_checks set plastic_items = 0 where school_id = '5c000000-0000-4000-8000-00000000000a';
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: an AI result was edited';
+end $$;
+do $$ begin
+  if (select sum(points) from public.points_ledger where source = 'ai' and school_id = '5c000000-0000-4000-8000-00000000000a') <> 7.57 then
+    raise exception 'CHECK FAILED: AI points rows should total 7.57';
+  end if;
+end $$;
+
+-- 13d. Teacher: flags, review, void + retake, challenges
+select set_config('ecotest.week',
+  (app.school_today('5c000000-0000-4000-8000-00000000000a') - (extract(isodow from app.school_today('5c000000-0000-4000-8000-00000000000a'))::int - 1))::text, true);
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+do $$ declare v_id uuid; begin
+  if (select count(*) from public.teacher_flags(current_date - 2, current_date + 2) where kind = 'ai_mismatch') <> 2 then
+    raise exception 'CHECK FAILED: expected 2 AI mismatch flags (7A bin, 8A room)';
+  end if;
+  select id into v_id from public.teacher_ai_checks(current_date - 2, current_date + 2) where class_name = '7A' and check_type = 'bin';
+  perform public.review_ai_check(v_id, 'Spoke to 7A monitors');
+  if (select count(*) from public.teacher_flags(current_date - 2, current_date + 2) where kind = 'ai_mismatch') <> 1 then
+    raise exception 'CHECK FAILED: reviewed flag still listed';
+  end if;
+  select id into v_id from public.teacher_ai_checks(current_date - 2, current_date + 2) where class_name = '8A' and check_type = 'bin';
+  perform public.void_ai_check(v_id, 'Photo was of the wrong bin');
+  perform public.publish_challenges(current_setting('ecotest.week')::date,
+    jsonb_build_array(jsonb_build_object('class_id', (select id from public.classes where school_id = '5c000000-0000-4000-8000-00000000000a' and name = '7A'),
+                                         'text', 'Bottle-Up Tuesday: every bottle reusable!')));
+end $$;
+do $$ begin
+  begin perform public.review_ai_check((select id from public.ai_checks where school_id = '5c000000-0000-4000-8000-00000000000a' and reviewed_at is not null limit 1), 'again');
+  exception when others then return; end;
+  raise exception 'CHECK FAILED: an AI check was reviewed twice';
+end $$;
+reset role;
+do $$ begin
+  if (select sum(l.points) from public.points_ledger l join public.ai_checks a on a.id = l.ai_check_id
+       where a.voided_at is not null and a.school_id = '5c000000-0000-4000-8000-00000000000a') <> 0 then
+    raise exception 'CHECK FAILED: voiding an AI check did not cancel its points';
+  end if;
+end $$;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+do $$ declare r jsonb; begin  -- retake after void is allowed
+  r := public.svc_record_ai_check('a0000000-0000-4000-8000-000000000004', 'bin', '{"plastic_items":0,"wrong_bin_items":0,"confidence":0.9}', 'mock', 'mock-1');
+  if (r ->> 'points')::numeric <> 10 then raise exception 'CHECK FAILED: empty bin should score 10, got %', r; end if;
+end $$;
+reset role;
+
+-- 13e. Monitor and public views
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+do $$ declare t jsonb; begin
+  t := public.my_ai_today();
+  if (t -> 'bin' ->> 'plastic_items')::int <> 9 or t ->> 'challenge' is null then
+    raise exception 'CHECK FAILED: 7A monitor view missing bin result or challenge: %', t;
+  end if;
+  if (select count(*) from public.ai_checks) <> 1 then  -- RLS: own class's checks only (its bin check)
+    raise exception 'CHECK FAILED: monitor sees % AI checks, expected 1', (select count(*) from public.ai_checks);
+  end if;
+end $$;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+do $$ declare s jsonb; begin
+  s := public.get_ai_summary('zz-test-a', current_date - 2, current_date + 2);
+  -- live bin checks: 7A (9 items, 30 present) + 8A retake (0 items, 28 present) → 9 items / 58 students → 1.6 per 10
+  if (s ->> 'bin_checks')::int <> 2 or (s ->> 'per_10_students')::numeric <> 1.6 then
+    raise exception 'CHECK FAILED: AI summary wrong: %', s;
+  end if;
+  if (select count(*) from public.get_challenges('zz-test-a', current_setting('ecotest.week')::date)) <> 1 then
+    raise exception 'CHECK FAILED: challenges list wrong';
+  end if;
+  begin perform 1 from public.ai_checks limit 1;
+  exception when insufficient_privilege then return; end;
+  raise exception 'CHECK FAILED: anonymous visitor could read ai_checks';
+end $$;
+reset role;
+
 rollback;
 select 'ALL ECOPOINTS CHECKS PASSED (test data rolled back)' as result;

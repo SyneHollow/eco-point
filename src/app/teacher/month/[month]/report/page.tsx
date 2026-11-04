@@ -6,7 +6,7 @@ import { LeaderList } from "@/components/leaderboard";
 import { Banner, cx, Logo, SdgChips } from "@/components/ui";
 import { addDays, fmtDay, fmtLongDay, fmtMonth, monthEnd } from "@/lib/dates";
 import { num, pct, pts } from "@/lib/format";
-import { getChampions, getImpact, getLeaderboard } from "@/lib/public-data";
+import { getAiSummary, getChampions, getImpact, getLeaderboard } from "@/lib/public-data";
 import { requireTeacher } from "@/lib/session";
 import { series } from "@/lib/teacher-data";
 import type { Impact } from "@/lib/types";
@@ -30,13 +30,16 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
   const baseFrom = start ? addDays(start, -14) : null;
   const baseTo = start ? addDays(start, -1) : null;
 
-  const [impact, after, baseline, board, trend, champs] = await Promise.all([
+  const [impact, after, baseline, board, trend, champs, aiMonth, aiAfter, aiBase] = await Promise.all([
     getImpact(from, to),
     hasAfter ? getImpact(afterFrom, to) : Promise.resolve(null),
     baseFrom && baseTo ? getImpact(baseFrom, baseTo) : Promise.resolve(null),
     getLeaderboard(from, to),
     series(from, to),
     getChampions(),
+    getAiSummary(from, to),
+    hasAfter ? getAiSummary(afterFrom, to) : Promise.resolve(null),
+    baseFrom && baseTo ? getAiSummary(baseFrom, baseTo) : Promise.resolve(null),
   ]);
   const champ = champs.find((c) => c.month === from);
   const showCompare = !!(baseline && baseline.entries > 0 && after && after.entries > 0);
@@ -128,6 +131,30 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
           </section>
         )}
 
+        {aiMonth && aiMonth.bin_checks + aiMonth.room_checks > 0 && (
+          <section className="break-inside-avoid">
+            <h2 className="font-display mb-3 text-xl font-semibold text-leaf-900">AI referee: photo evidence</h2>
+            <div className="grid gap-4 sm:grid-cols-4">
+              <Num label="Bin photos checked" value={num(aiMonth.bin_checks)} />
+              <Num label="Plastic items per 10 students" value={aiMonth.per_10_students === null ? "–" : String(aiMonth.per_10_students)} />
+              <Num label="Room photos checked" value={num(aiMonth.room_checks)} />
+              <Num label="Flags raised for review" value={num(aiMonth.flagged)} />
+            </div>
+            {aiBase && aiBase.per_10_students !== null && aiAfter && aiAfter.per_10_students !== null && (
+              <p className="mt-3 text-sm text-leaf-900">
+                Plastic found in class bins went from <strong>{aiBase.per_10_students}</strong> items per 10 students in the measuring days to{" "}
+                <strong>{aiAfter.per_10_students}</strong> once points started (
+                {aiAfter.per_10_students <= aiBase.per_10_students ? "▼" : "▲"}{" "}
+                {Math.abs(Math.round((100 * (aiAfter.per_10_students - aiBase.per_10_students)) / (aiBase.per_10_students || 1)))}%).
+              </p>
+            )}
+            <p className="mt-2 text-xs text-stone-500">
+              Counted by AI from photos of each class&apos;s bin after lunch. Photos were never stored. Every count the AI flagged as inconsistent was
+              reviewed by a teacher.
+            </p>
+          </section>
+        )}
+
         <section className="break-inside-avoid">
           <h2 className="font-display mb-3 text-xl font-semibold text-leaf-900">Day by day (% of the school)</h2>
           <TrendChart rows={trend} height={260} />
@@ -140,7 +167,8 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
 
         <footer className="border-t border-stone-200 pt-4 text-xs text-stone-500">
           All figures are calculated directly from records entered in EcoPoints: counts by each class&apos;s Eco Monitors (as a share of
-          students present that day) and yes/no checks by a different class on a daily rotation. Nothing in this report is estimated.
+          students present that day), yes/no checks by a different class on a daily rotation, and AI counts from bin and room photos.
+          Nothing in this report is estimated.
           Generated {fmtLongDay(me.today)}.
         </footer>
       </article>

@@ -84,3 +84,35 @@ export const activityLog = (limit = 50) =>
   call<Array<{ at: string; actor_name: string | null; action: string; entity: string; details: Record<string, unknown> }>>("teacher_activity_log", {
     p_limit: limit,
   });
+
+export type AiCheckRow = {
+  id: string;
+  check_type: "bin" | "room";
+  check_date: string;
+  class_name: string;
+  checked_by: string;
+  plastic_items: number | null;
+  wrong_bin_items: number | null;
+  present_used: number | null;
+  lights_on: boolean | null;
+  litter_level: number | null;
+  bin_overflowing: boolean | null;
+  confidence: number;
+  items: Array<{ label: string; kind: string }>;
+  summary: string | null;
+  points: number;
+  baseline: boolean;
+  flagged: boolean;
+  flag_reason: string | null;
+  reviewed: boolean;
+  review_note: string | null;
+  voided: boolean;
+  void_reason: string | null;
+  provider: string;
+  model: string;
+  created_at: string;
+};
+export type FlagRow = { kind: "ai_mismatch" | "perfect_streak" | "generous_checker"; class_name: string; detail: string; ref_id: string | null; flag_date: string | null };
+
+export const teacherAiChecks = (from: string, to: string) => call<AiCheckRow[]>("teacher_ai_checks", { p_from: from, p_to: to });
+export const teacherFlags = (from: string, to: string) => call<FlagRow[]>("teacher_flags", { p_from: from, p_to: to });

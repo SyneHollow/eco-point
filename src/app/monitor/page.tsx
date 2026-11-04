@@ -6,6 +6,7 @@ import { fmtDay, fmtLongDay, fmtTime } from "@/lib/dates";
 import { pts } from "@/lib/format";
 import { logout } from "../login/actions";
 import { AuditForm, EntryForm } from "./forms";
+import { PhotoCheck } from "./photo-check";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Today's check" };
@@ -26,12 +27,24 @@ type Today = {
   recent: Array<{ date: string; points: number }>;
 };
 
+type AiToday = {
+  enabled: boolean;
+  entry_submitted: boolean;
+  audit_submitted: boolean;
+  bin: { plastic_items: number; points: number; flagged: boolean; flag_reason: string | null; summary: string | null; baseline: boolean } | null;
+  room: { class: string; lights_on: boolean; litter_level: number; flagged: boolean; flag_reason: string | null; summary: string | null } | null;
+  challenge: string | null;
+};
+
+const LITTER = ["no litter", "a little litter", "noticeable litter", "messy"];
+
 export default async function MonitorPage() {
   const me = await requireMonitor();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("my_today");
+  const [{ data, error }, { data: aiData }] = await Promise.all([supabase.rpc("my_today"), supabase.rpc("my_ai_today")]);
   if (error || !data) throw new Error(error?.message ?? "Could not load today's check");
   const t = data as Today;
+  const ai = (aiData ?? null) as AiToday | null;
   const peerLabel = Object.fromEntries(t.peer_actions.map((a) => [a.code, a.label]));
   const selfLabel = Object.fromEntries(t.self_actions.map((a) => [a.code, a]));
 
@@ -58,6 +71,13 @@ export default async function MonitorPage() {
           <Banner>
             Measuring week: count honestly. This is your class&apos;s &ldquo;before&rdquo; picture. Points start on {fmtLongDay(t.points_start_date)}.
           </Banner>
+        )}
+
+        {ai?.challenge && (
+          <div className="rounded-2xl bg-lagoon-100 px-4 py-3 text-lagoon-700 ring-1 ring-lagoon-500/30">
+            <p className="text-xs font-extrabold uppercase tracking-wider">This week&apos;s challenge</p>
+            <p className="font-display text-xl font-semibold">{ai.challenge}</p>
+          </div>
         )}
 
         <Card title="1 · Today's class check">
@@ -88,8 +108,31 @@ export default async function MonitorPage() {
           )}
         </Card>
 
+        {ai?.enabled && (
+          <Card title="2 · AI bin check (after lunch)">
+            {t.entry || ai.bin ? (
+              <PhotoCheck
+                kind="bin"
+                intro="Photograph the inside of your class bin from above. The AI counts single-use plastic, so your class's numbers are backed by evidence. Keep people out of the photo."
+                done={
+                  ai.bin
+                    ? {
+                        line: `AI counted ${ai.bin.plastic_items} plastic item(s)${ai.bin.baseline ? " (measuring week)" : ` · ${pts(ai.bin.points)} points`}`,
+                        summary: ai.bin.summary,
+                        flagged: ai.bin.flagged,
+                        flag_reason: ai.bin.flag_reason,
+                      }
+                    : null
+                }
+              />
+            ) : (
+              <p className="text-sm text-stone-600">Submit today&apos;s class check first, then photograph the bin after lunch.</p>
+            )}
+          </Card>
+        )}
+
         {t.audit_target && t.peer_actions.length > 0 && (
-          <Card title={`2 · Peer check: visit ${t.audit_target.name}`}>
+          <Card title={`3 · Peer check: visit ${t.audit_target.name}`}>
             {t.audit_done ? (
               <div className="space-y-2 text-sm">
                 <p className="font-bold text-leaf-700">✓ {t.audit_target.name} checked at {fmtTime(t.audit_done.submitted_at, me.timezone)}</p>
@@ -101,6 +144,25 @@ export default async function MonitorPage() {
                     </li>
                   ))}
                 </ul>
+                {ai?.enabled && (
+                  <div className="mt-4 border-t border-stone-100 pt-4">
+                    <p className="mb-2 font-extrabold text-leaf-900">Add a room photo as evidence</p>
+                    <PhotoCheck
+                      kind="room"
+                      intro={`Photograph ${t.audit_target.name}'s empty room. The AI checks the lights and litter, so peer checks stay fair.`}
+                      done={
+                        ai.room
+                          ? {
+                              line: `Room photo checked: lights ${ai.room.lights_on ? "on" : "off"}, ${LITTER[ai.room.litter_level] ?? ""}`,
+                              summary: ai.room.summary,
+                              flagged: ai.room.flagged,
+                              flag_reason: ai.room.flag_reason,
+                            }
+                          : null
+                      }
+                    />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -113,7 +175,7 @@ export default async function MonitorPage() {
           </Card>
         )}
 
-        <Card title="3 · How your class did">
+        <Card title="4 · How your class did">
           <div className="space-y-4 text-sm">
             <p>
               {t.checked_by ? (

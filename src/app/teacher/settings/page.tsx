@@ -4,12 +4,17 @@ import { fmtDay, fmtTime } from "@/lib/dates";
 import { requireTeacher } from "@/lib/session";
 import { activityLog, teacherStaff } from "@/lib/teacher-data";
 import { addTeacher, saveSettings } from "../actions";
+import { saveAiSettings } from "../ai-actions";
+import { aiConfig } from "@/lib/ai";
+import { getSchool } from "@/lib/public-data";
 
 export const metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const me = await requireTeacher();
-  const [staff, log] = await Promise.all([teacherStaff(), activityLog(60)]);
+  const [staff, log, school] = await Promise.all([teacherStaff(), activityLog(60), getSchool()]);
+  const ai = { ai_enabled: school?.ai_enabled ?? true, ai_bin_max_points: school?.ai_bin_max_points ?? 10, ai_bin_zero_at: school?.ai_bin_zero_at ?? 0.5 };
+  const cfg = aiConfig();
 
   return (
     <div className="space-y-6">
@@ -28,6 +33,29 @@ export default async function SettingsPage() {
               <input name="points_start_date" type="date" defaultValue={me.points_start_date ?? ""} className={inputClass} />
             </Field>
           </div>
+        </ActionForm>
+      </Card>
+
+      <Card title="AI photo checks">
+        <ActionForm action={saveAiSettings} submitLabel="Save AI settings" resetOnSuccess={false} className="space-y-4">
+          <label className="flex items-center gap-2 text-sm font-bold text-leaf-900">
+            <input type="checkbox" name="enabled" defaultChecked={ai.ai_enabled} className="h-4 w-4 accent-leaf-600" /> AI bin and room photo checks are on
+          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Bin check: points for a plastic-free bin" hint="Points fall as the AI finds more plastic items.">
+              <input name="bin_max_points" type="number" step="0.5" min="0.5" max="100" defaultValue={ai.ai_bin_max_points} className={inputClass} />
+            </Field>
+            <Field
+              label="Bin check: zero points at … plastic items per student"
+              hint="0.5 means a class of 30 scores nothing at 15 or more plastic items. Tune this during the measuring week."
+            >
+              <input name="bin_zero_at" type="number" step="0.05" min="0.05" max="5" defaultValue={ai.ai_bin_zero_at} className={inputClass} />
+            </Field>
+          </div>
+          <p className="text-xs text-stone-500">
+            AI service: {cfg.provider} ({cfg.model}){cfg.ready ? " · connected" : " · API key missing"}. Photos are never stored; people in
+            photos are rejected.
+          </p>
         </ActionForm>
       </Card>
 
@@ -92,6 +120,20 @@ function describe(action: string, d: Record<string, unknown>) {
       return `Closed the month. Champion ${s("champion")} (${s("points")} pts)`;
     case "monitor.pin_set":
       return `Set the PIN for ${s("class")}`;
+    case "ai.bin":
+      return `AI bin check for ${s("class")}: ${s("plastic_items")} plastic item(s)${d?.flagged ? " (flagged)" : ""}`;
+    case "ai.room":
+      return `AI room check of ${s("class")}${d?.flagged ? " (flagged)" : ""}`;
+    case "ai.review":
+      return "Reviewed an AI flag";
+    case "ai.void":
+      return `Voided an AI check: ${s("reason")}`;
+    case "ai.attempt":
+      return `Photo sent to the AI (${s("class")})`;
+    case "ai.settings":
+      return "Changed AI settings";
+    case "challenges.publish":
+      return `Published ${s("count")} weekly challenge(s)`;
     case "account.link":
       return `Created a ${s("role")} login: ${s("display_name")}`;
     default:

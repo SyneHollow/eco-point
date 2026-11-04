@@ -9,3 +9,4 @@
 - `points_ledger` is append-only. Corrections are new rows with a reason.
 - After any schema change, `supabase/tests/ecopoints_checks.sql` must still end with ALL ECOPOINTS CHECKS PASSED, and `npm run build` must pass.
 - No student personal data, ever.
+- AI: photos are never stored; anything with a person in it is rejected; AI results are written only through `svc_record_ai_check` (service role) after `requireMonitor()`. AI mismatches are flags for a teacher, never automatic penalties.

@@ -7,7 +7,7 @@ import { addDays, fmtLongDay, periodRange } from "@/lib/dates";
 import { pts } from "@/lib/format";
 import { getLeaderboard } from "@/lib/public-data";
 import { requireTeacher } from "@/lib/session";
-import { series, teacherToday } from "@/lib/teacher-data";
+import { series, teacherFlags, teacherToday } from "@/lib/teacher-data";
 import { awardPoints } from "./actions";
 
 export const metadata = { title: "Teacher dashboard" };
@@ -15,7 +15,12 @@ export const metadata = { title: "Teacher dashboard" };
 export default async function TeacherDashboard() {
   const me = await requireTeacher();
   const month = periodRange("month", me.today);
-  const [today, board, trend] = await Promise.all([teacherToday(), getLeaderboard(month.from, month.to), series(addDays(me.today, -29), me.today)]);
+  const [today, board, trend, flags] = await Promise.all([
+    teacherToday(),
+    getLeaderboard(month.from, month.to),
+    series(addDays(me.today, -29), me.today),
+    teacherFlags(addDays(me.today, -13), me.today),
+  ]);
   const submitted = today.filter((c) => c.entry_submitted).length;
   const checked = today.filter((c) => c.checked).length;
   const noPin = today.filter((c) => !c.has_monitor).length;
@@ -35,6 +40,12 @@ export default async function TeacherDashboard() {
 
       {me.baseline && me.points_start_date && (
         <Banner>Measuring week is on: entries are recorded without points until {fmtLongDay(me.points_start_date)}. Change this in Settings.</Banner>
+      )}
+      {flags.length > 0 && (
+        <Banner>
+          ⚑ {flags.length} thing{flags.length === 1 ? "" : "s"} flagged by the AI referee in the last two weeks.{" "}
+          <Link href="/teacher/ai" className="underline">Have a look →</Link>
+        </Banner>
       )}
       {noPin > 0 && (
         <Banner tone="lagoon">

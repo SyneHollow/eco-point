@@ -16,18 +16,33 @@ A school sustainability competition run by class, not by student. Built from the
 | Append-only points ledger; corrections are voids/adjustments with a reason; closed months frozen | Results can be trusted and audited; the report adds up |
 | `school_id` on every table + RLS | Pilot is one school; another school could be added without a rewrite |
 
+## AI ("AI referee", added 3 Nov 2026, migration `20261103000000_ai_checks.sql`)
+| Feature | What it does | Where |
+|---|---|---|
+| **Bin check** | After lunch a monitor photographs the inside of the class bin. AI counts single-use plastic items (and items in the wrong bin). Scores "low plastic waste": `max × (1 − items ÷ (present × zero_at))`, default max 10, zero_at 0.5. **Cross-check:** if the class claimed many plastic-free lunches but the bin holds more plastic than that can explain (`items > 3 × (present − plastic_free) + 3`), it's flagged for the teacher. | `src/app/monitor/photo-check.tsx`, `ai-actions.ts`, `svc_record_ai_check` |
+| **Room check** | After the peer check, the visiting class photographs the empty room. AI judges lights on/off, litter 0–3, bin overflowing. Never changes points; flags disagreement with the peer check's answers. | same |
+| **Pattern flags** | Plain statistics (not AI): 100% plastic-free every day for 5+ days; a class that passes everyone on 5+ peer checks while the school passes < 90%. | `teacher_flags` |
+| **Ask EcoPoints** | Teacher asks in plain English; the server sends class-level figures only (leaderboards, habit %, AI bin figures, flags) and the AI answers from that data. | `src/lib/ai/context.ts`, `/teacher/assistant` |
+| **Weekly challenges** | AI drafts one challenge per class from its weakest habit; teacher edits and publishes; shown on the monitor page and corridor screen. | `class_challenges`, `publish_challenges` |
+
+**Provider:** Gemini (`gemini-3.8-flash`) by default, chosen for its object boxes (drawn on the monitor's photo) and price. Claude works by setting `AI_PROVIDER=anthropic`. Both called with plain `fetch` from `src/lib/ai/index.ts`; replies are cleaned and validated by `src/lib/ai/normalize.ts` before anything is saved.
+
+**Privacy rules (minors):** photos are shrunk on the device (≤ 1288 px), sent once to the AI, and **never stored**. Only counts, item labels and the AI's one-line summary are kept. A photo with any person in it is rejected before anything is saved. Real school photos must go through a **paid-tier** Gemini key (free-tier content may be used by Google). Max 15 photo attempts per class per day (cost guard).
+
 ## Data model (supabase/migrations)
-`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only) · `month_closures` · `activity_log`.
+`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges`.
 
 ## Security model
 - Browser/server clients get **SELECT only** (RLS-filtered). Every write is a `SECURITY DEFINER` RPC that checks the caller's role first.
-- Anonymous visitors reach only: `public_school`, `public_classes`, `get_leaderboard`, `get_impact`, `get_champions` (aggregates).
+- Anonymous visitors reach only: `public_school`, `public_classes`, `get_leaderboard`, `get_impact`, `get_champions`, `get_ai_summary`, `get_challenges` (aggregates).
 - The secret key is used only in `src/app/teacher/actions.ts` (create class logins, set PINs, add teachers) and `scripts/create-teacher.mjs`, always **after** `requireTeacher()`.
-- `svc_link_profile` / `svc_log` are executable by `service_role` only.
+- `svc_link_profile` / `svc_log` / `svc_record_ai_check` / `svc_ai_attempts_today` are executable by `service_role` only. AI results can only be written by the server, after it has checked the monitor's session and called the AI itself.
 
 ## Code map
 - `src/lib/session.ts`: `getMe`, `requireTeacher`, `requireMonitor`
 - `src/lib/public-data.ts`: public RPCs · `src/lib/teacher-data.ts`: teacher RPCs
 - `src/app/monitor/*`: monitor screen + actions · `src/app/teacher/*`: teacher area + actions
 - `src/app/display/*`: corridor screen · `src/app/api/export/route.ts`: CSV
-- `supabase/tests/ecopoints_checks.sql`: the rules, as tests
+- `src/lib/ai/*`: AI provider switch, prompts, reply validation, data context for Ask EcoPoints
+- `src/app/teacher/ai/*` (AI checks & flags) · `src/app/teacher/assistant/*` (Ask EcoPoints + challenges)
+- `supabase/tests/ecopoints_checks.sql`: the rules, as tests (v1 + AI)

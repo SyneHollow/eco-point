@@ -1,7 +1,7 @@
 import { AutoRefresh, Clock } from "@/components/client";
 import { Logo } from "@/components/ui";
-import { getChampions, getImpact, getLeaderboard, getSchool } from "@/lib/public-data";
-import { fmtLongDay, fmtMonth, periodRange } from "@/lib/dates";
+import { getAiSummary, getChallenges, getChampions, getImpact, getLeaderboard, getSchool } from "@/lib/public-data";
+import { fmtLongDay, fmtMonth, periodRange, weekStart } from "@/lib/dates";
 import { DisplaySlides } from "./slides";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +12,13 @@ export default async function DisplayPage() {
   if (!school) return <p className="p-8">School not set up.</p>;
   const month = periodRange("month", school.today);
   const week = periodRange("week", school.today);
-  const [monthRows, weekRows, impact, champions] = await Promise.all([
+  const [monthRows, weekRows, impact, champions, ai, challenges] = await Promise.all([
     getLeaderboard(month.from, month.to),
     getLeaderboard(week.from, week.to),
     getImpact(month.from, month.to),
     getChampions(),
+    getAiSummary(month.from, month.to),
+    getChallenges(weekStart(school.today)),
   ]);
 
   return (
@@ -42,9 +44,11 @@ export default async function DisplayPage() {
         weekRows={weekRows}
         impact={impact}
         champion={champions[0] ?? null}
+        ai={ai}
+        challenges={challenges}
       />
       <footer className="px-10 py-4 text-sm text-leaf-200/70">
-        Points come from daily class checks, fair peer checks by another class, and teacher bonuses · Built with Nexayra Technologies
+        Points come from daily class checks, fair peer checks, AI-checked bin photos and teacher bonuses · Built with Nexayra Technologies
       </footer>
     </div>
   );

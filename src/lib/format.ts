@@ -18,3 +18,9 @@ export function errorMessage(e: { message?: string } | null | undefined, fallbac
   if (/permission denied|jwt|not authorized/i.test(m)) return "You're not allowed to do that. Try logging in again.";
   return m;
 }
+
+/** "1 bin photo", "3 bin photos" */
+export function plural(n: number | string | null | undefined, word: string, many = `${word}s`) {
+  const v = Number(n ?? 0);
+  return `${num(v)} ${v === 1 ? word : many}`;
+}
