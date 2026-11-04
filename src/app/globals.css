@@ -1,52 +1,176 @@
 @import "tailwindcss";
 
+/*
+  EcoPoints design tokens ("match day"). Full rules: docs/DESIGN.md.
+  Old token names (leaf / sun / lagoon / stone) are kept but remapped, so every page shares one palette.
+*/
 @theme {
-  --color-leaf-50: #f0faf3;
-  --color-leaf-100: #dcf3e3;
-  --color-leaf-200: #b8e6c7;
-  --color-leaf-300: #86d19f;
-  --color-leaf-400: #4fb574;
-  --color-leaf-500: #2e9a57;
-  --color-leaf-600: #217c44;
-  --color-leaf-700: #1c6338;
-  --color-leaf-800: #194f2f;
-  --color-leaf-900: #143f27;
-  --color-leaf-950: #0a2415;
+  /* Pitch green: text, dark surfaces, primary buttons. leaf-900 = pitch. */
+  --color-leaf-50: #eef6f0;
+  --color-leaf-100: #ddefe3;
+  --color-leaf-200: #b9dec6;
+  --color-leaf-300: #8ccaa3;
+  --color-leaf-400: #4fae77;
+  --color-leaf-500: #23935a;
+  --color-leaf-600: #177245;
+  --color-leaf-700: #115a39;
+  --color-leaf-800: #0d4a33;
+  --color-leaf-900: #0d3b2e;
+  --color-leaf-950: #072219;
 
-  --color-sun-100: #fff4cc;
-  --color-sun-300: #ffd95c;
-  --color-sun-500: #f5b700;
-  --color-sun-700: #a87a00;
+  --color-pitch: #0d3b2e;
+  --color-chalk: #eef2ed;
+  --color-line: #d3dcd4;
+  --color-ink: #0d3b2e;
+  --color-paper: #eef2ed;
 
-  --color-lagoon-100: #d6f1f2;
-  --color-lagoon-500: #0e8f99;
-  --color-lagoon-700: #0b6a72;
+  /* Gold: 1st place and the leader only. sun-700 is text on sun-100. */
+  --color-sun-100: #fff1c7;
+  --color-sun-300: #ffd966;
+  --color-sun-500: #ffc233;
+  --color-sun-700: #7a4b00;
 
-  --color-paper: #f6f8f3;
-  --color-ink: #12261a;
+  /* Sky: AI and information. */
+  --color-lagoon-100: #e3eefb;
+  --color-lagoon-500: #2f7fd6;
+  --color-lagoon-700: #1f5faf;
 
-  --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fredoka", "Nunito", ui-sans-serif, system-ui, sans-serif;
+  /* Cool green-greys instead of Tailwind's warm stone, to sit on the chalk ground. */
+  --color-stone-50: #f5f8f4;
+  --color-stone-100: #e9eee8;
+  --color-stone-200: #d3dcd4;
+  --color-stone-300: #b3c1b7;
+  --color-stone-400: #627569;
+  --color-stone-500: #4f6359;
+  --color-stone-600: #3e5148;
+  --color-stone-700: #2f4138;
+
+  /* Team colours: one per class, always with pitch text on top (6.2:1 or better). */
+  --color-team-lime: #b5e354;
+  --color-team-aqua: #5fdcc8;
+  --color-team-sky: #74c0fc;
+  --color-team-peri: #a5b4fc;
+  --color-team-lilac: #d0a6f8;
+  --color-team-rose: #ff9cc0;
+  --color-team-coral: #ff9e80;
+  --color-team-butter: #ffd966;
+
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Big Shoulders Display Variable", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
 body {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-chalk);
+  color: var(--color-pitch);
 }
 
 body {
   font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  line-height: 0.95;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* One focus style everywhere; dark surfaces switch it to gold. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus, var(--color-pitch));
+  outline-offset: 2px;
+}
+.on-dark {
+  --focus: var(--color-sun-500);
+}
+
+button:not(:disabled),
+summary,
+select,
+[role="radio"] {
+  cursor: pointer;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Team tile ("bib"): class code on its team colour. Colour comes from an inline style. */
+.team-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-pitch);
+  border-radius: 8px;
+  box-shadow: inset 0 -3px 0 rgb(13 59 46 / 0.18);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one orchestrated motion: podium columns rise on load. */
+@keyframes podium-rise {
+  from {
+    transform: scaleY(0.08);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes podium-label {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.podium-col {
+  transform-origin: bottom;
+  animation: podium-rise 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.podium-label {
+  animation: podium-label 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.slide-in {
+  animation: slide-in 500ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Large, finger-friendly number inputs without browser spinners */
@@ -73,5 +197,9 @@ input[type="number"] {
   .print-plain {
     box-shadow: none !important;
     border: none !important;
+  }
+  .podium-col,
+  .podium-label {
+    animation: none !important;
   }
 }

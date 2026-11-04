@@ -22,19 +22,22 @@ export default async function DisplayPage() {
   ]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-leaf-950 text-white">
+    <div className="on-dark flex h-dvh flex-col overflow-hidden bg-pitch text-white">
       <AutoRefresh seconds={60} />
-      <header className="flex items-center justify-between px-10 py-6">
+      <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-12 py-5">
         <Logo dark size="lg" />
-        <div className="text-right">
-          <div className="font-display text-2xl font-semibold">{school.name}</div>
-          <div className="text-leaf-200">
-            {fmtLongDay(school.today)} · <Clock timeZone={school.timezone} />
+        <div className="flex items-center gap-8 text-right">
+          <div>
+            <div className="text-2xl font-bold">{school.name}</div>
+            <div className="text-xl text-leaf-200">{fmtLongDay(school.today)}</div>
+          </div>
+          <div className="font-display tabular text-6xl font-extrabold">
+            <Clock timeZone={school.timezone} />
           </div>
         </div>
       </header>
       {school.baseline && school.points_start_date && (
-        <div className="mx-10 rounded-2xl bg-sun-500 px-6 py-3 text-lg font-bold text-leaf-950">
+        <div className="mx-12 mt-6 rounded-xl bg-sun-500 px-6 py-3 text-2xl font-bold text-pitch">
           Measuring week: we&apos;re finding out where we start. Points begin {fmtLongDay(school.points_start_date)}.
         </div>
       )}
@@ -47,8 +50,8 @@ export default async function DisplayPage() {
         ai={ai}
         challenges={challenges}
       />
-      <footer className="px-10 py-4 text-sm text-leaf-200/70">
-        Points come from daily class checks, fair peer checks, AI-checked bin photos and teacher bonuses · Built with Nexayra Technologies
+      <footer className="flex justify-between gap-8 px-12 py-5 text-lg text-leaf-200">
+        <span>Points come from daily class checks, fair peer checks, AI-checked bin photos and teacher bonuses.</span>
       </footer>
     </div>
   );

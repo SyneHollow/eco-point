@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { LeaderList, Podium } from "@/components/leaderboard";
-import { cx } from "@/components/ui";
+import { cx, TeamTile } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import type { AiSummary, Champion, Impact, LeaderRow } from "@/lib/types";
 import { fmtMonth } from "@/lib/dates";
 import { num, pct, plural, pts } from "@/lib/format";
@@ -62,9 +63,9 @@ export function DisplaySlides({
         <Slide title={`Together in ${monthLabel}`}>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {impact.items.map((it) => (
-              <div key={it.code} className="rounded-3xl bg-white/5 p-8">
-                <div className="font-display text-8xl font-bold text-sun-300">{pct(it.pct)}</div>
-                <div className="mt-3 text-3xl font-bold">{it.label}</div>
+              <div key={it.code} className="rounded-2xl border border-white/10 bg-white/[0.05] p-8">
+                <div className="font-display tabular text-[10rem] leading-none font-black">{pct(it.pct)}</div>
+                <div className="mt-4 text-3xl font-bold">{it.label}</div>
                 <div className="mt-2 text-xl text-leaf-200">
                   {it.input_type === "count" ? `${plural(it.total, "time")} this month` : `${num(it.total)} of ${plural(it.answers, "check")} passed`}
                 </div>
@@ -72,15 +73,16 @@ export function DisplaySlides({
             ))}
           </div>
           {ai && ai.bin_checks > 0 && ai.per_10_students !== null && (
-            <div className="mt-6 flex items-center gap-8 rounded-3xl bg-lagoon-700/40 p-8">
-              <div className="font-display text-8xl font-bold text-sun-300">{ai.per_10_students}</div>
+            <div className="mt-6 flex items-center gap-10 rounded-2xl bg-team-sky p-8 text-pitch">
+              <Icon name="scan" size={88} />
+              <div className="font-display tabular text-[10rem] leading-none font-black">{ai.per_10_students}</div>
               <div>
                 <div className="text-3xl font-bold">plastic items per 10 students in class bins</div>
-                <div className="mt-2 text-xl text-leaf-200">Counted by the AI referee from {plural(ai.bin_checks, "bin photo")}. Lower is better!</div>
+                <div className="mt-2 text-2xl">Counted by the AI referee from {plural(ai.bin_checks, "bin photo")}. Lower is better!</div>
               </div>
             </div>
           )}
-          <p className="mt-10 text-center text-3xl text-leaf-200">
+          <p className="mt-10 text-3xl text-leaf-200">
             {plural(impact.eco_actions, "eco action")} logged from {plural(impact.entries, "class check")}
           </p>
         </Slide>
@@ -94,9 +96,9 @@ export function DisplaySlides({
         <Slide title="This week's challenges">
           <div className="grid gap-4 lg:grid-cols-2">
             {challenges.map((c) => (
-              <div key={c.class_id} className="flex items-center gap-6 rounded-3xl bg-white/5 px-6 py-5">
-                <span className="font-display w-24 text-5xl font-bold text-sun-300">{c.class_name}</span>
-                <span className="text-2xl font-semibold">{c.text}</span>
+              <div key={c.class_id} className="flex items-center gap-6 rounded-2xl border border-white/10 bg-white/[0.05] px-6 py-5">
+                <TeamTile name={c.class_name} size="tv" className="shrink-0" />
+                <span className="text-3xl leading-snug font-semibold">{c.text}</span>
               </div>
             ))}
           </div>
@@ -108,12 +110,13 @@ export function DisplaySlides({
     slides.push({
       key: "champion",
       node: (
-        <Slide title="Green Champion">
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="text-8xl">🏆</div>
-            <div className="font-display mt-4 text-[9rem] font-bold leading-none text-sun-300">{champion.class_name}</div>
-            <div className="mt-4 text-3xl font-bold">
-              {fmtMonth(champion.month)} · {pts(champion.points)} points
+        <Slide title="Last month's winner">
+          <div className="flex items-center justify-center gap-16 py-10">
+            <Icon name="trophy" size={300} weight="fill" className="text-sun-500" />
+            <div>
+              <TeamTile name={champion.class_name} className="h-60 min-w-72 px-10 text-[13rem]" />
+              <div className="mt-6 text-4xl font-bold">Green Champion of {fmtMonth(champion.month)}</div>
+              <div className="font-display tabular mt-2 text-7xl font-extrabold">{pts(champion.points)} points</div>
             </div>
           </div>
         </Slide>
@@ -122,23 +125,38 @@ export function DisplaySlides({
   }
 
   const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
+    if (paused) return;
     const t = setInterval(() => setI((x) => (x + 1) % slides.length), SLIDE_SECONDS * 1000);
     return () => clearInterval(t);
-  }, [slides.length]);
+  }, [slides.length, paused]);
   const current = slides[i % slides.length];
 
   return (
-    <main className="flex flex-1 flex-col px-10 py-6">
-      <div key={current.key} className="flex-1 animate-[fade_0.6s_ease]">
+    <main className="flex min-h-0 flex-1 flex-col px-12 pt-6 pb-4">
+      <div key={current.key} className="slide-in min-h-0 flex-1">
         {current.node}
       </div>
-      <div className="mt-6 flex justify-center gap-2">
+      <div className="mt-4 flex shrink-0 items-center justify-center gap-3">
         {slides.map((s, n) => (
-          <span key={s.key} className={cx("h-2 rounded-full transition-all", n === i % slides.length ? "w-10 bg-sun-300" : "w-2 bg-white/30")} />
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setI(n)}
+            aria-label={`Show slide ${n + 1}`}
+            aria-current={n === i % slides.length ? "true" : undefined}
+            className={cx("h-2.5 rounded-full transition-[width,background-color]", n === i % slides.length ? "w-14 bg-sun-500" : "w-2.5 bg-white/30")}
+          />
         ))}
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          className="ml-4 rounded-lg px-3 py-1 text-base font-bold text-leaf-200 hover:text-white"
+        >
+          {paused ? "Play" : "Pause"}
+        </button>
       </div>
-      <style>{`@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
     </main>
   );
 }
@@ -146,12 +164,12 @@ export function DisplaySlides({
 function Slide({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h1 className="font-display mb-10 text-6xl font-bold">{title}</h1>
+      <h1 className="font-display mb-8 text-8xl font-black">{title}</h1>
       {children}
     </section>
   );
 }
 
 function Big({ children }: { children: React.ReactNode }) {
-  return <p className="py-16 text-center text-3xl font-bold text-leaf-200">{children}</p>;
+  return <p className="py-16 text-center text-4xl font-bold text-leaf-200">{children}</p>;
 }

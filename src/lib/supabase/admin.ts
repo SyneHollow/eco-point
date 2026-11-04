@@ -15,6 +15,6 @@ export function createAdminClient() {
 }
 
 export function monitorEmail(classId: string) {
-  const domain = process.env.MONITOR_EMAIL_DOMAIN ?? "nexayra.com";
+  const domain = process.env.MONITOR_EMAIL_DOMAIN ?? "credencehighschool.com";
   return `ecopoints-m-${classId}@${domain}`;
 }

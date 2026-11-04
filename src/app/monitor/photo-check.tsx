@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { buttonClass, cx } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { runBinCheck, runRoomCheck, type PhotoState } from "./ai-actions";
 
 type Done = { summary?: string | null; flagged?: boolean; flag_reason?: string | null; line: string } | null;
@@ -39,9 +40,12 @@ export function PhotoCheck({ kind, done, intro }: { kind: "bin" | "room"; done: 
 
   if (done && !result) {
     return (
-      <div className="space-y-2 text-sm">
-        <p className="font-bold text-leaf-700">✓ {done.line}</p>
-        {done.summary && <p className="text-stone-600">AI: “{done.summary}”</p>}
+      <div className="space-y-2">
+        <p className="flex items-start gap-2 font-bold text-leaf-600">
+          <Icon name="done" size={22} weight="fill" className="shrink-0" />
+          <span>{done.line}</span>
+        </p>
+        {done.summary && <AiSays text={done.summary} />}
         {done.flagged && <FlagNote reason={done.flag_reason} />}
       </div>
     );
@@ -68,11 +72,11 @@ export function PhotoCheck({ kind, done, intro }: { kind: "bin" | "room"; done: 
 
   return (
     <div className="space-y-4">
-      {!result && <p className="text-sm text-stone-600">{intro}</p>}
+      {!result && <p className="text-stone-600">{intro}</p>}
       <input ref={input} type="file" accept="image/*" capture="environment" className="hidden" onChange={pick} aria-label="Take photo" />
 
       {photo && (
-        <div className="relative overflow-hidden rounded-2xl bg-stone-100">
+        <div className="relative overflow-hidden rounded-xl border border-line bg-stone-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={photo.url} alt="Your photo" className="block w-full" />
           {result?.items?.map((it, i) =>
@@ -86,32 +90,46 @@ export function PhotoCheck({ kind, done, intro }: { kind: "bin" | "room"; done: 
             ) : null,
           )}
           {pending && (
-            <div className="absolute inset-0 flex items-center justify-center bg-leaf-950/60 text-lg font-bold text-white">AI is checking…</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-leaf-950/70 text-lg font-bold text-white" role="status">
+              <Icon name="scan" size={36} className="animate-pulse" />
+              AI is checking…
+            </div>
           )}
         </div>
       )}
 
       {result ? (
-        <div className="space-y-2">
-          <p className="text-lg font-extrabold text-leaf-800">{result.message}</p>
-          {result.summary && <p className="text-sm text-stone-600">AI: “{result.summary}”</p>}
+        <div className="space-y-3" role="status">
+          <p className="font-display text-4xl leading-tight font-black">{result.message}</p>
+          {result.summary && <AiSays text={result.summary} />}
           {result.flagged && <FlagNote reason={result.flagReason} />}
-          <p className="text-xs text-stone-500">The photo wasn&apos;t saved anywhere. Only the result was.</p>
+          <p className="flex items-center gap-1.5 text-sm text-stone-500">
+            <Icon name="lock" size={16} />
+            The photo wasn&apos;t saved anywhere. Only the result was.
+          </p>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => input.current?.click()} disabled={pending} className={buttonClass(photo ? "secondary" : "primary", "py-3")}>
-            {photo ? "Retake photo" : kind === "bin" ? "📷 Photograph the bin" : "📷 Photograph the room"}
+          <button
+            type="button"
+            onClick={() => input.current?.click()}
+            disabled={pending}
+            className={buttonClass(photo ? "secondary" : "primary", "min-h-12")}
+          >
+            <Icon name={photo ? "refresh" : "camera"} size={20} />
+            {photo ? "Retake photo" : kind === "bin" ? "Photograph the bin" : "Photograph the room"}
           </button>
           {photo && (
-            <button type="button" onClick={send} disabled={pending} className={buttonClass("primary", "py-3")}>
+            <button type="button" onClick={send} disabled={pending} className={buttonClass("primary", "min-h-12")}>
+              <Icon name="scan" size={20} />
               {pending ? "Checking…" : "Check with AI"}
             </button>
           )}
         </div>
       )}
       {(localError || state?.error) && (
-        <p role="alert" className="text-sm font-bold text-red-700">
+        <p role="alert" className="flex items-start gap-1.5 font-bold text-red-700">
+          <Icon name="warning" size={18} className="mt-0.5 shrink-0" />
           {localError ?? state?.error}
         </p>
       )}
@@ -121,8 +139,18 @@ export function PhotoCheck({ kind, done, intro }: { kind: "bin" | "room"; done: 
 
 function FlagNote({ reason }: { reason?: string | null }) {
   return (
-    <p className="rounded-xl bg-sun-100 px-3 py-2 text-sm font-semibold text-sun-700">
-      ⚑ Sent to your teacher to look at: {reason ?? "the photo and the class's answers don't match."}
+    <p className="flex items-start gap-2 rounded-[10px] border border-sun-500/50 bg-sun-100 px-3 py-2.5 font-semibold text-sun-700">
+      <Icon name="flag" size={18} weight="fill" className="mt-0.5 shrink-0" />
+      <span>Sent to your teacher to look at: {reason ?? "the photo and the class's answers don't match."}</span>
     </p>
+  );
+}
+
+function AiSays({ text }: { text: string }) {
+  return (
+    <blockquote className="border-l-4 border-lagoon-500 pl-3 text-stone-600">
+      <span className="font-bold text-lagoon-700">The AI said: </span>
+      {text}
+    </blockquote>
   );
 }

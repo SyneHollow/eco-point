@@ -1,5 +1,5 @@
 import { ActionForm } from "@/components/client";
-import { Badge, Card, cx, Empty, Field, inputClass } from "@/components/ui";
+import { Badge, Card, cx, Empty, Field, inputClass, TeamTile } from "@/components/ui";
 import { fmtDay, periodRange } from "@/lib/dates";
 import { pts } from "@/lib/format";
 import { requireTeacher } from "@/lib/session";
@@ -18,8 +18,8 @@ export default async function PointsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-leaf-900">Bonus points</h1>
-        <p className="max-w-2xl text-sm text-stone-600">
+        <h1 className="font-display text-5xl font-extrabold">Bonus points</h1>
+        <p className="mt-2 max-w-2xl text-stone-600">
           Use a <strong>bonus</strong> for eco drives and one-off activities. Use an <strong>adjustment</strong> (can be negative) to correct something. Both need a reason, are shown with your name, and can&apos;t be deleted.
         </p>
       </div>
@@ -28,7 +28,7 @@ export default async function PointsPage() {
         <ActionForm action={awardPoints} submitLabel="Save" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
           <Field label="Class">
             <select name="class_id" required defaultValue="" className={inputClass}>
-              <option value="" disabled>Choose…</option>
+              <option value="" disabled>Choose a class</option>
               {classes.filter((c) => c.active).map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -54,7 +54,7 @@ export default async function PointsPage() {
           <Empty>Nothing yet this month.</Empty>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase tracking-wide text-stone-500">
+            <thead className="border-b border-line text-left text-sm text-stone-500 [&_th]:font-semibold">
               <tr>
                 <th className="py-2">Date</th>
                 <th>Class</th>
@@ -64,12 +64,12 @@ export default async function PointsPage() {
                 <th>By</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-line">
               {ledger.map((l) => (
                 <tr key={l.id}>
-                  <td className="py-2">{fmtDay(l.points_date)}</td>
-                  <td className="font-bold">{l.class_name}</td>
-                  <td><Badge tone={TONE[l.source] ?? "grey"}>{l.source}</Badge></td>
+                  <td className="py-2.5 whitespace-nowrap">{fmtDay(l.points_date)}</td>
+                  <td><TeamTile name={l.class_name} size="xs" /></td>
+                  <td><Badge tone={TONE[l.source] ?? "grey"}>{l.source[0].toUpperCase() + l.source.slice(1)}</Badge></td>
                   <td className={cx("tabular font-bold", l.points < 0 && "text-red-700")}>{l.points > 0 ? "+" : ""}{pts(l.points)}</td>
                   <td>{l.reason}</td>
                   <td className="text-stone-500">{l.created_by_name}</td>

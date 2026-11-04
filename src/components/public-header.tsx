@@ -1,17 +1,29 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { cx, Logo } from "@/components/ui";
 
-export function PublicHeader({ schoolName }: { schoolName?: string }) {
+export function PublicHeader({ schoolName, current }: { schoolName?: string; current?: "leaderboard" | "login" }) {
+  const item = (href: string, label: string, key: typeof current) => (
+    <Link
+      href={href}
+      aria-current={current === key ? "page" : undefined}
+      className={cx(
+        "rounded-lg px-3 py-2 font-bold transition-colors",
+        current === key ? "bg-white/12 text-white" : "text-leaf-100 hover:bg-white/10 hover:text-white",
+      )}
+    >
+      {label}
+    </Link>
+  );
   return (
-    <header className="no-print border-b border-leaf-900/5 bg-white">
+    <header className="no-print on-dark bg-pitch text-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="flex items-center gap-3">
-          <Logo />
-          {schoolName && <span className="hidden border-l border-stone-200 pl-3 text-sm font-bold text-stone-500 sm:inline">{schoolName}</span>}
+        <Link href="/" className="flex min-w-0 items-center gap-3 rounded-lg">
+          <Logo dark />
+          {schoolName && <span className="hidden truncate border-l border-white/20 pl-3 font-semibold text-leaf-200 sm:inline">{schoolName}</span>}
         </Link>
-        <nav className="flex items-center gap-1 text-sm font-bold">
-          <Link href="/leaderboard" className="rounded-lg px-3 py-2 text-leaf-800 hover:bg-leaf-50">Leaderboard</Link>
-          <Link href="/login" className="rounded-lg px-3 py-2 text-leaf-800 hover:bg-leaf-50">Log in</Link>
+        <nav aria-label="Main" className="flex items-center gap-1 text-[15px]">
+          {item("/leaderboard", "Leaderboard", "leaderboard")}
+          {item("/login", "Log in", "login")}
         </nav>
       </div>
     </header>

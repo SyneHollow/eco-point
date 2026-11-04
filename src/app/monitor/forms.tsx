@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { Stepper, YesNo } from "@/components/client";
 import { buttonClass, SdgChips } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import type { ActionState } from "@/lib/session";
 import { submitAudit, submitEntry } from "./actions";
 
@@ -22,7 +23,7 @@ export function EntryForm({ actions, strength }: { actions: SelfAction[]; streng
   );
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="divide-y divide-line">
       <input type="hidden" name="values" value={JSON.stringify(clamped)} />
       <Question label="Students present today" help={`Class size: ${strength}`}>
         <Stepper name="present" min={1} max={strength} value={present} onChange={setPresent} label="Students present" />
@@ -38,7 +39,7 @@ export function EntryForm({ actions, strength }: { actions: SelfAction[]; streng
                 onChange={(v) => setValues((s) => ({ ...s, [a.code]: v }))}
                 label={a.label}
               />
-              <span className="text-sm font-bold text-stone-500">of {present}</span>
+              <span className="font-bold text-stone-500">of {present}</span>
             </div>
           ) : (
             <YesNo value={values[a.code] as 0 | 1 | null} onChange={(v) => setValues((s) => ({ ...s, [a.code]: v }))} label={a.label} />
@@ -46,17 +47,13 @@ export function EntryForm({ actions, strength }: { actions: SelfAction[]; streng
         </Question>
       ))}
 
-      <div className="space-y-2">
-        <button type="submit" disabled={pending || missing.length > 0} className={buttonClass("primary", "w-full py-4 text-lg")}>
+      <div className="space-y-2 pt-5">
+        <button type="submit" disabled={pending || missing.length > 0} className={buttonClass("primary", "w-full min-h-14 text-lg")}>
           {pending ? "Saving…" : "Submit today's check"}
         </button>
-        {missing.length > 0 && <p className="text-center text-sm text-stone-500">Answer: {missing.join(", ")}</p>}
-        <p className="text-center text-xs text-stone-500">You can only submit once a day, so check your numbers first.</p>
-        {state?.error && (
-          <p role="alert" className="text-center text-sm font-bold text-red-700">
-            {state.error}
-          </p>
-        )}
+        {missing.length > 0 && <p className="text-center text-stone-500">Still to answer: {missing.join(", ")}</p>}
+        <p className="text-center text-sm text-stone-500">You can only submit once a day, so check your numbers first.</p>
+        {state?.error && <ErrorLine>{state.error}</ErrorLine>}
       </div>
     </form>
   );
@@ -68,21 +65,19 @@ export function AuditForm({ actions, target }: { actions: PeerAction[]; target: 
   const missing = actions.filter((a) => values[a.code] === null);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="divide-y divide-line">
       <input type="hidden" name="values" value={JSON.stringify(values)} />
       {actions.map((a) => (
         <Question key={a.code} label={`${target}: ${a.label}`} help={a.help} sdgs={a.sdgs} points={a.max_points}>
           <YesNo value={values[a.code]} onChange={(v) => setValues((s) => ({ ...s, [a.code]: v }))} label={a.label} />
         </Question>
       ))}
-      <button type="submit" disabled={pending || missing.length > 0} className={buttonClass("primary", "w-full py-4 text-lg")}>
-        {pending ? "Saving…" : `Submit check of ${target}`}
-      </button>
-      {state?.error && (
-        <p role="alert" className="text-center text-sm font-bold text-red-700">
-          {state.error}
-        </p>
-      )}
+      <div className="space-y-2 pt-5">
+        <button type="submit" disabled={pending || missing.length > 0} className={buttonClass("primary", "w-full min-h-14 text-lg")}>
+          {pending ? "Saving…" : `Submit check of ${target}`}
+        </button>
+        {state?.error && <ErrorLine>{state.error}</ErrorLine>}
+      </div>
     </form>
   );
 }
@@ -101,19 +96,28 @@ function Question({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="space-y-3 rounded-2xl bg-paper p-4">
+    <fieldset className="space-y-3 py-5 first-of-type:pt-1">
       <legend className="sr-only">{label}</legend>
       <div className="space-y-1">
-        <p className="text-lg font-extrabold text-leaf-900">{label}</p>
-        {help && <p className="text-sm text-stone-600">{help}</p>}
+        <p className="text-lg leading-snug font-bold">{label}</p>
+        {help && <p className="text-stone-600">{help}</p>}
         {(points !== undefined || !!sdgs?.length) && (
           <div className="flex flex-wrap items-center gap-2 pt-0.5">
-            {points !== undefined && <span className="text-xs font-bold text-leaf-700">up to {points} pts</span>}
+            {points !== undefined && <span className="text-sm font-bold text-leaf-600">Up to {points} points</span>}
             <SdgChips sdgs={sdgs} />
           </div>
         )}
       </div>
       {children}
     </fieldset>
+  );
+}
+
+function ErrorLine({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="flex items-start justify-center gap-1.5 text-center font-bold text-red-700">
+      <Icon name="warning" size={18} className="mt-0.5 shrink-0" />
+      {children}
+    </p>
   );
 }

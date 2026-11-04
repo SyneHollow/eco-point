@@ -15,8 +15,8 @@ export default async function CriteriaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-leaf-900">Daily checklist</h1>
-        <p className="max-w-2xl text-sm text-stone-600">
+        <h1 className="font-display text-5xl font-extrabold">Daily checklist</h1>
+        <p className="mt-2 max-w-2xl text-stone-600">
           What classes are scored on every day. Daily maximum now: <strong>{pts(dailyMax)} points</strong> per class. Changes apply from the next
           entry; points already earned don&apos;t change. Counts are scored as a share of students present, so class size doesn&apos;t matter.
         </p>
@@ -30,7 +30,7 @@ export default async function CriteriaPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone={a.input_type === "count" ? "leaf" : "lagoon"}>{a.input_type === "count" ? "Count of students" : "Yes / no"}</Badge>
                 <Badge tone="grey">{a.entered_by === "self" ? "Entered by the class" : "Peer check by another class"}</Badge>
-                <code className="text-xs text-stone-400">{a.code}</code>
+                <code className="text-sm text-stone-500">{a.code}</code>
               </div>
               <div className="grid gap-3 md:grid-cols-[2fr_3fr_7rem_8rem_6rem]">
                 <Field label="Name">
@@ -49,8 +49,8 @@ export default async function CriteriaPage() {
                   <input name="sort_order" type="number" defaultValue={a.sort_order} className={inputClass} />
                 </Field>
               </div>
-              <label className="flex items-center gap-2 text-sm font-bold text-leaf-900">
-                <input type="checkbox" name="active" defaultChecked={a.active} className="h-4 w-4 accent-leaf-600" /> In use
+              <label className="flex min-h-11 items-center gap-2 font-bold">
+                <input type="checkbox" name="active" defaultChecked={a.active} className="h-5 w-5 accent-leaf-600" /> In use
               </label>
             </ActionForm>
           </Card>
@@ -61,7 +61,7 @@ export default async function CriteriaPage() {
         <ActionForm action={saveAction} submitLabel="Add item" className="space-y-3">
           <div className="grid gap-3 md:grid-cols-3">
             <Field label="Name">
-              <input name="label" required className={inputClass} placeholder="e.g. Fans off at break" />
+              <input name="label" required className={inputClass} placeholder="For example: fans off at break" />
             </Field>
             <Field label="Short code" hint="lowercase letters, numbers, _ (can't change later)">
               <input name="code" required pattern="[a-z0-9_]{2,40}" className={inputClass} placeholder="fans_off" />

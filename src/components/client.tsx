@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, type ReactNode } from "rea
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/session";
 import { buttonClass, cx, type BtnVariant } from "@/components/ui";
+import { Icon } from "@/components/icons";
 
 type ServerAction = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
@@ -49,11 +50,17 @@ export function ActionForm({
           {pending ? pendingLabel : submitLabel}
         </button>
         {state?.error && (
-          <p role="alert" className="text-sm font-semibold text-red-700">
+          <p role="alert" className="inline-flex items-start gap-1.5 text-[15px] font-semibold text-red-700">
+            <Icon name="warning" size={18} className="mt-0.5 shrink-0" />
             {state.error}
           </p>
         )}
-        {state?.ok && state.message && <p className="text-sm font-semibold text-leaf-700">{state.message}</p>}
+        {state?.ok && state.message && (
+          <p role="status" className="inline-flex items-start gap-1.5 text-[15px] font-semibold text-leaf-600">
+            <Icon name="done" size={18} className="mt-0.5 shrink-0" />
+            {state.message}
+          </p>
+        )}
       </div>
     </form>
   );
@@ -76,11 +83,12 @@ export function Stepper({
   label: string;
 }) {
   const set = (v: number) => onChange(Math.max(min, Math.min(max, Number.isFinite(v) ? Math.round(v) : min)));
+  const btn =
+    "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-leaf-100 text-pitch transition-colors hover:bg-leaf-200 active:translate-y-px disabled:opacity-40";
   return (
     <div className="flex items-center gap-2">
-      <button type="button" aria-label={`Decrease ${label}`} onClick={() => set(value - 1)}
-        className="h-12 w-12 rounded-xl bg-leaf-100 text-2xl font-bold text-leaf-800 active:scale-95">
-        −
+      <button type="button" aria-label={`Decrease ${label}`} onClick={() => set(value - 1)} disabled={value <= min} className={btn}>
+        <Icon name="minus" size={24} />
       </button>
       <input
         name={name}
@@ -91,11 +99,10 @@ export function Stepper({
         max={max}
         value={value}
         onChange={(e) => set(Number(e.target.value))}
-        className="tabular h-12 w-20 rounded-xl border-0 text-center text-2xl font-extrabold ring-1 ring-stone-300 focus:ring-2 focus:ring-leaf-500 outline-none"
+        className="font-display tabular h-14 w-20 rounded-xl border-[1.5px] border-stone-400 bg-white text-center text-4xl font-extrabold text-pitch focus:border-pitch"
       />
-      <button type="button" aria-label={`Increase ${label}`} onClick={() => set(value + 1)}
-        className="h-12 w-12 rounded-xl bg-leaf-100 text-2xl font-bold text-leaf-800 active:scale-95">
-        +
+      <button type="button" aria-label={`Increase ${label}`} onClick={() => set(value + 1)} disabled={value >= max} className={btn}>
+        <Icon name="plus" size={24} />
       </button>
     </div>
   );
@@ -103,26 +110,30 @@ export function Stepper({
 
 export function YesNo({ value, onChange, label }: { value: 0 | 1 | null; onChange: (v: 0 | 1) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-2">
-      {([1, 0] as const).map((v) => (
-        <button
-          key={v}
-          type="button"
-          role="radio"
-          aria-checked={value === v}
-          onClick={() => onChange(v)}
-          className={cx(
-            "h-12 min-w-24 rounded-xl px-4 text-base font-extrabold ring-1 transition",
-            value === v
-              ? v === 1
-                ? "bg-leaf-600 text-white ring-leaf-600"
-                : "bg-red-600 text-white ring-red-600"
-              : "bg-white text-stone-600 ring-stone-300",
-          )}
-        >
-          {v === 1 ? "Yes" : "No"}
-        </button>
-      ))}
+    <div role="radiogroup" aria-label={label} className="grid max-w-sm grid-cols-2 gap-2">
+      {([1, 0] as const).map((v) => {
+        const on = value === v;
+        return (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(v)}
+            className={cx(
+              "flex h-14 items-center justify-center gap-2 rounded-xl border-[1.5px] text-lg font-bold transition-colors active:translate-y-px",
+              on
+                ? v === 1
+                  ? "border-leaf-600 bg-leaf-600 text-white shadow-[inset_0_-3px_0_rgb(0_0_0/0.25)]"
+                  : "border-red-700 bg-red-700 text-white shadow-[inset_0_-3px_0_rgb(0_0_0/0.25)]"
+                : "border-stone-300 bg-white text-stone-600 hover:border-stone-500",
+            )}
+          >
+            <Icon name={v === 1 ? "check" : "x"} size={20} />
+            {v === 1 ? "Yes" : "No"}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -130,6 +141,7 @@ export function YesNo({ value, onChange, label }: { value: 0 | 1 | null; onChang
 export function PrintButton({ label = "Print / save as PDF" }: { label?: string }) {
   return (
     <button type="button" onClick={() => window.print()} className={buttonClass("primary", "no-print")}>
+      <Icon name="printer" size={18} />
       {label}
     </button>
   );

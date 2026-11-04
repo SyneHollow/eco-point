@@ -1,7 +1,7 @@
 # EcoPoints: context
 
 ## What it is
-A school sustainability competition run by class, not by student. Built from the "ECOPOINTS – Class Wise Sustainability App" concept for a CBSE school (Grades 7–8), as a web-app so it works on classroom smartboards, teacher laptops, shared tablets and the corridor screen with nothing to install. Built by Nexayra Technologies and credited openly ("Built with Nexayra Technologies" in the footer). The students own the concept, criteria, data collection and analysis.
+A school sustainability competition run by class, not by student. Built from the "ECOPOINTS – Class Wise Sustainability App" concept for a CBSE school (Grades 7–8), as a web-app so it works on classroom smartboards, teacher laptops, shared tablets and the corridor screen with nothing to install.  The students own the concept, criteria, data collection and analysis.
 
 ## Design decisions (and why)
 | Decision | Why |
@@ -25,9 +25,12 @@ A school sustainability competition run by class, not by student. Built from the
 | **Ask EcoPoints** | Teacher asks in plain English; the server sends class-level figures only (leaderboards, habit %, AI bin figures, flags) and the AI answers from that data. | `src/lib/ai/context.ts`, `/teacher/assistant` |
 | **Weekly challenges** | AI drafts one challenge per class from its weakest habit; teacher edits and publishes; shown on the monitor page and corridor screen. | `class_challenges`, `publish_challenges` |
 
-**Provider:** Gemini (`gemini-3.8-flash`) by default, chosen for its object boxes (drawn on the monitor's photo) and price. Claude works by setting `AI_PROVIDER=anthropic`. Both called with plain `fetch` from `src/lib/ai/index.ts`; replies are cleaned and validated by `src/lib/ai/normalize.ts` before anything is saved.
+**Provider:** Gemini (`gemini-3.5-flash-lite`, with `gemini-3.8-flash` as automatic backup) by default, chosen for its object boxes (drawn on the monitor's photo) and price. Claude works by setting `AI_PROVIDER=anthropic`. Both called with plain `fetch` from `src/lib/ai/index.ts`; replies are cleaned and validated by `src/lib/ai/normalize.ts` before anything is saved.
 
 **Privacy rules (minors):** photos are shrunk on the device (≤ 1288 px), sent once to the AI, and **never stored**. Only counts, item labels and the AI's one-line summary are kept. A photo with any person in it is rejected before anything is saved. Real school photos must go through a **paid-tier** Gemini key (free-tier content may be used by Google). Max 15 photo attempts per class per day (cost guard).
+
+## UI ("match day" redesign, 4 Nov 2026)
+Each class is a team with a fixed colour; standings look like a scoreboard; the monitor's day is a numbered 1–4 timeline. Fonts: Big Shoulders Display (scores, titles) + Atkinson Hyperlegible Next (everything else), self-hosted. Icons: Phosphor via `src/components/icons.tsx`. Full rules and tokens: **`docs/DESIGN.md`**. Teacher area: grouped sidebar on desktop, Menu disclosure on phones. Monitor login: tap a class tile (radio inputs), then the PIN.
 
 ## Data model (supabase/migrations)
 `schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges`.
@@ -39,6 +42,7 @@ A school sustainability competition run by class, not by student. Built from the
 - `svc_link_profile` / `svc_log` / `svc_record_ai_check` / `svc_ai_attempts_today` are executable by `service_role` only. AI results can only be written by the server, after it has checked the monitor's session and called the AI itself.
 
 ## Code map
+- `src/components/ui.tsx` (TeamTile, Medal, Card, buttons, inputs), `icons.tsx` (the only icon source), `leaderboard.tsx` (Podium, LeaderList), `charts.tsx`
 - `src/lib/session.ts`: `getMe`, `requireTeacher`, `requireMonitor`
 - `src/lib/public-data.ts`: public RPCs · `src/lib/teacher-data.ts`: teacher RPCs
 - `src/app/monitor/*`: monitor screen + actions · `src/app/teacher/*`: teacher area + actions

@@ -1,6 +1,6 @@
 # EcoPoints: status
 
-_Last updated: 4 Nov 2026_
+_Last updated: 4 Nov 2026 (UI redesign)_
 
 ## Done
 - Database: schema, RLS, scoring RPCs, peer-check rotation, measuring week, month close, append-only ledger, activity log.
@@ -9,7 +9,9 @@ _Last updated: 4 Nov 2026_
 - End-to-end browser test (14 checks) passed against a local stand-in for Supabase Auth/API on real Postgres.
 - Supabase project **Eco-Point** created (Shayaan's free org). Migration applied there; the app's database functions respond.
 - `scripts/create-teacher.mjs`: checks the school code before asking questions, explains a name typed in place of the code, no Windows exit crash.
-- **AI referee (3 Nov):** bin and room photo checks with boxes drawn on the photo, AI-vs-entry cross-check flags, pattern flags, teacher review/void, Ask EcoPoints, AI-drafted weekly challenges, AI figures on leaderboard, corridor screen and impact report, AI settings. Rule checks now 66 (all pass); AI reply clean-up 15 unit tests; AI browser test 28 checks pass against a fake Gemini and a fake Claude server (proves request format, photo shrinking to ≤ 1288 px, key handling, provider switch).
+- **AI referee (3 Nov):** bin and room photo checks with boxes drawn on the photo, AI-vs-entry cross-check flags, pattern flags, teacher review/void, Ask EcoPoints, AI-drafted weekly challenges, AI figures on leaderboard, corridor screen and impact report, AI settings. Rule checks now 66 (all pass); AI reply clean-up 15 unit tests; AI browser test 30 checks pass against a fake Gemini and a fake Claude server (proves request format, photo shrinking to ≤ 1288 px, key handling, provider switch).
+
+- **UI redesign "match day" (4 Nov):** new design system (`docs/DESIGN.md`): team colours per class, scoreboard type, SVG medals and icons (no emoji), podium hero on home and leaderboard, class-tile login, monitor step timeline with "jobs done" bar, teacher sidebar, TV sized to 1080p with pause, self-hosted fonts. No logic, database or AI changes. Re-tested: build passes; v1 browser test 14/14; AI browser test 30/30; no sideways scrolling at 390 px; all text contrast AA; keyboard focus visible.
 
 ## Not done / next
 - [ ] Eco-Point: run `supabase/migrations/20261103000000_ai_checks.sql`, then the checks file again.
@@ -21,4 +23,5 @@ _Last updated: 4 Nov 2026_
 - [ ] Deploy to Vercel; corridor screen URL `/display` on the school's display.
 - [ ] Pilot with 2 classes, then set `points_start_date` (Settings) for a measuring week before going school-wide.
 - [ ] Competition: confirm the name, rules, deadline and whether student-built code is required.
+- [ ] Look over the new UI on a real phone, a classroom smartboard and the corridor TV (fonts, colours, the podium animation).
 - [ ] Later, if wanted: streaks/badges, Arabic, installable app, login attempt throttling (see GOTCHAS 9).

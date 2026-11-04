@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold text-leaf-900">Settings</h1>
+      <h1 className="font-display text-5xl font-extrabold">Settings</h1>
 
       <Card title="School">
         <ActionForm action={saveSettings} submitLabel="Save" resetOnSuccess={false} className="space-y-4">
@@ -38,8 +38,8 @@ export default async function SettingsPage() {
 
       <Card title="AI photo checks">
         <ActionForm action={saveAiSettings} submitLabel="Save AI settings" resetOnSuccess={false} className="space-y-4">
-          <label className="flex items-center gap-2 text-sm font-bold text-leaf-900">
-            <input type="checkbox" name="enabled" defaultChecked={ai.ai_enabled} className="h-4 w-4 accent-leaf-600" /> AI bin and room photo checks are on
+          <label className="flex min-h-11 items-center gap-2 font-bold">
+            <input type="checkbox" name="enabled" defaultChecked={ai.ai_enabled} className="h-5 w-5 accent-leaf-600" /> AI bin and room photo checks are on
           </label>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Bin check: points for a plastic-free bin" hint="Points fall as the AI finds more plastic items.">
@@ -52,8 +52,8 @@ export default async function SettingsPage() {
               <input name="bin_zero_at" type="number" step="0.05" min="0.05" max="5" defaultValue={ai.ai_bin_zero_at} className={inputClass} />
             </Field>
           </div>
-          <p className="text-xs text-stone-500">
-            AI service: {cfg.provider} ({cfg.model}){cfg.ready ? " · connected" : " · API key missing"}. Photos are never stored; people in
+          <p className="text-sm text-stone-500">
+            AI service: {cfg.provider} ({cfg.model}), {cfg.ready ? "connected" : "API key missing"}. Photos are never stored; people in
             photos are rejected.
           </p>
         </ActionForm>
@@ -61,9 +61,9 @@ export default async function SettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Teachers">
-          <ul className="mb-5 divide-y divide-stone-100 text-sm">
+          <ul className="mb-5 divide-y divide-line">
             {staff.map((t) => (
-              <li key={t.id} className="flex justify-between gap-3 py-2">
+              <li key={t.id} className="flex flex-wrap justify-between gap-x-3 py-2.5">
                 <span className="font-bold">{t.display_name}</span>
                 <span className="text-stone-500">{t.email}</span>
               </li>
@@ -83,16 +83,16 @@ export default async function SettingsPage() {
         </Card>
 
         <Card title="Recent activity">
-          <ul className="max-h-[28rem] space-y-2 overflow-y-auto text-sm">
+          <ul className="max-h-[28rem] divide-y divide-line overflow-y-auto">
             {log.map((l, i) => (
-              <li key={i} className="rounded-lg bg-paper px-3 py-2">
-                <div className="flex justify-between gap-2 text-xs text-stone-500">
+              <li key={i} className="py-2.5">
+                <div className="flex justify-between gap-2 text-sm text-stone-500">
                   <span>{l.actor_name ?? "System"}</span>
                   <span>
                     {fmtDay(l.at.slice(0, 10))} {fmtTime(l.at, me.timezone)}
                   </span>
                 </div>
-                <div className="font-semibold text-leaf-900">{describe(l.action, l.details)}</div>
+                <div className="font-semibold">{describe(l.action, l.details)}</div>
               </li>
             ))}
           </ul>

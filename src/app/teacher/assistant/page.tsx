@@ -19,8 +19,8 @@ export default async function AssistantPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-leaf-900">Ask EcoPoints</h1>
-        <p className="max-w-2xl text-sm text-stone-600">
+        <h1 className="font-display text-5xl font-extrabold">Ask EcoPoints</h1>
+        <p className="mt-2 max-w-2xl text-stone-600">
           Ask questions about your classes in plain English, and let AI draft each class&apos;s weekly challenge from its weakest habit. Only
           class-level numbers are sent to the AI: there&apos;s no student data to send.
         </p>
