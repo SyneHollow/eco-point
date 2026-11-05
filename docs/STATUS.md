@@ -1,6 +1,6 @@
 # EcoPoints: status
 
-_Last updated: 5 Nov 2026 (rewards: badges, gardens, QR challenges)_
+_Last updated: 5 Nov 2026 (leaves: a separate garden currency)_
 
 ## Done
 - Database: schema, RLS, scoring RPCs, peer-check rotation, measuring week, month close, append-only ledger, activity log.
@@ -17,6 +17,8 @@ _Last updated: 5 Nov 2026 (rewards: badges, gardens, QR challenges)_
 
 - **Rewards (5 Nov):** monthly class badges (6 tiers, rare plant rewards), a virtual garden per class (shop, watering and growth stages, move/swap, shed, history, celebrations), QR eco challenges (3 instant + 8 class projects, printable posters, teacher review/void), Monitor tabs (Today / Garden / Challenges), teacher pages "Eco challenges" and "Badges & gardens", badges on the leaderboard, two new corridor-screen slides. Demo data now includes gardens and challenges. Tested: rewards rule checks pass (overspend, limits, review, void, isolation, guards); 35 rewards browser checks; 66 v1 rule checks; v1 browser 14/14; AI 30/30. The v1 rule test had a date-dependent assumption (failed on 5 Nov only because of the peer rotation); fixed.
 
+- **Leaves (5 Nov):** the garden now runs on leaves, a second currency for taking part (class check 5, peer check 3, bin photo 3, room photo 2, challenges 3–15, badges 10–40 a month, teacher grants). Points can't be spent anywhere. Leaves count in the header of every monitor screen, on each of Today's jobs, on challenge cards and pages, and in a "How your class earns leaves" card in the garden. Teachers: "Give leaves" on Bonus points & leaves, leaves per challenge, prices in leaves, earning rules on Badges & gardens. Migration upgrades existing data (prices, past purchases, past claims). Tested: rewards rule checks rewritten for leaves (all pass, also on an upgraded database with a month of demo data); v1 rule checks; 45 rewards browser checks (incl. header follows purchases and challenges, points unchanged by spending or giving leaves); v1 browser 14/14; AI 30/30; no sideways scrolling, no JS errors.
+
 ## Not done / next
 - [ ] Eco-Point: run `supabase/migrations/20261103000000_ai_checks.sql`, then the checks file again.
 - [ ] Gemini API key (paid tier for school photos) in `.env.local` and Vercel; first real test with 3–5 staged bin photos. 4 Nov: first real try failed with the old generic message; default switched to `gemini-3.5-flash-lite` with `gemini-3.8-flash` as automatic backup, and the screen now shows the real reason.
@@ -27,7 +29,7 @@ _Last updated: 5 Nov 2026 (rewards: badges, gardens, QR challenges)_
 - [ ] Deploy to Vercel; corridor screen URL `/display` on the school's display.
 - [ ] Pilot with 2 classes, then set `points_start_date` (Settings) for a measuring week before going school-wide.
 - [ ] Competition: confirm the name, rules, deadline and whether student-built code is required.
-- [ ] Eco-Point: run `supabase/migrations/20261105000000_rewards.sql`, then `supabase/tests/rewards_checks.sql` (and re-run the demo seed if you want gardens and challenges in the demo).
+- [ ] Eco-Point: run `supabase/migrations/20261105000000_rewards.sql`, then `supabase/migrations/20261105100000_leaves.sql`, then `supabase/tests/rewards_checks.sql` (and re-run the demo seed if you want gardens and challenges in the demo).
 - [ ] Vercel: set `NEXT_PUBLIC_SITE_URL` to the live address, then print the QR posters from Teacher → Eco challenges → Print QR codes.
 - [ ] More reward ideas you mentioned (to come): special awards, garden themes, avatars, school forest.
 - [ ] **Before the real pilot:** run `supabase/seed-demo-month-undo.sql` on Eco-Point to remove the demo data, then set the real points start date in Settings.

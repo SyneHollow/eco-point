@@ -59,7 +59,7 @@ async function runCheck(kind: "bin" | "room", fd: FormData): Promise<PhotoState>
     p_model: analysis.model,
   });
   if (error) return { error: error.message };
-  revalidatePath("/monitor");
+  revalidatePath("/monitor", "layout");   // header leaves too
   const message =
     kind === "bin"
       ? `AI counted ${"plastic_items" in r ? r.plastic_items : 0} plastic item(s)${data?.baseline ? " (measuring week: no points yet)" : `: ${pts(data?.points)} points`}.`

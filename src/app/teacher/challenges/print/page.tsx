@@ -8,7 +8,6 @@ import { pts } from "@/lib/format";
 import { requireTeacher } from "@/lib/session";
 import { teacherChallenges } from "@/lib/teacher-data";
 import { REPEAT_LABEL } from "@/lib/rewards";
-import { CREDIT } from "@/lib/config";
 
 export const metadata = { title: "Print QR codes" };
 
@@ -88,7 +87,6 @@ export default async function PrintQrPage() {
             </p>
             <div className="mt-auto flex items-end justify-between gap-4 pt-6 text-sm text-stone-500">
               <span className="break-all">{url}</span>
-              <span className="shrink-0">{CREDIT}</span>
             </div>
           </section>
         ))}

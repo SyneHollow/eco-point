@@ -4,7 +4,7 @@ import { Icon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import { requireMonitor } from "@/lib/session";
 import { fmtLongDay } from "@/lib/dates";
-import { pts } from "@/lib/format";
+import { leaves, pts } from "@/lib/format";
 import { REPEAT_AGAIN, REPEAT_LABEL, type Challenge, type MyChallenges } from "@/lib/rewards";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,8 @@ export default async function ChallengesPage() {
       <div>
         <h1 className="font-display text-5xl font-black">Eco challenges</h1>
         <p className="mt-1 max-w-2xl text-stone-600">
-          Extra points for real eco actions around school. Look for EcoPoints QR codes, do the challenge, then scan the code with your class
-          tablet.
+          Extra points and leaves for real eco actions around school. Look for EcoPoints QR codes, do the challenge, then scan the code with
+          your class tablet.
         </p>
       </div>
       {!c.open && c.points_start_date && (
@@ -46,7 +46,7 @@ export default async function ChallengesPage() {
 
       <section aria-labelledby="proj-title">
         <h2 id="proj-title" className="text-xl font-bold">Class projects: your teacher checks them</h2>
-        <p className="mt-1 text-stone-600">Do the project as a class, then write what you did or found. Points arrive when your teacher approves.</p>
+        <p className="mt-1 text-stone-600">Do the project as a class, then write what you did or found. The points and leaves arrive when your teacher approves.</p>
         <ul className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((x) => (
             <li key={x.id}>
@@ -64,7 +64,17 @@ function Card({ x, link = false }: { x: Challenge; link?: boolean }) {
     <>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg leading-snug font-bold">{x.title}</h3>
-        <span className="font-display tabular shrink-0 text-2xl font-black text-leaf-600">+{pts(x.points)}</span>
+        <span className="shrink-0 text-right">
+          <span className="block">
+            <span className="font-display tabular text-2xl font-black text-pitch">+{pts(x.points)}</span>
+            <span className="text-sm font-bold text-stone-500"> {Number(x.points) === 1 ? "point" : "points"}</span>
+          </span>
+          {x.leaves > 0 && (
+            <span className="flex items-center justify-end gap-1 text-sm font-bold text-leaf-700">
+              <Icon name="leaf" size={16} />+{leaves(x.leaves)}
+            </span>
+          )}
+        </span>
       </div>
       <p className="mt-1 text-stone-600">{x.summary}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">

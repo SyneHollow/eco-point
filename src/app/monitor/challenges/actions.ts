@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMonitor, type ActionState } from "@/lib/session";
-import { errorMessage, pts } from "@/lib/format";
+import { errorMessage, leaves, pts } from "@/lib/format";
 
 export async function claimChallenge(_prev: ActionState, fd: FormData): Promise<ActionState> {
   await requireMonitor();
@@ -15,6 +15,6 @@ export async function claimChallenge(_prev: ActionState, fd: FormData): Promise<
   if (error) return { error: errorMessage(error) };
   revalidatePath("/monitor", "layout");
   return data?.status === "approved"
-    ? { ok: true, message: `Done! Your class earned ${pts(data.points)} points.` }
-    : { ok: true, message: "Sent to your teacher. The points arrive when they approve it." };
+    ? { ok: true, message: `Done! Your class earned ${pts(data.points)} points${data.leaves > 0 ? ` and ${leaves(data.leaves)}` : ""}.` }
+    : { ok: true, message: "Sent to your teacher. The points and leaves arrive when they approve it." };
 }

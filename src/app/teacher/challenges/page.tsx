@@ -1,4 +1,5 @@
 import { ActionForm } from "@/components/client";
+import { Icon } from "@/components/icons";
 import { Badge, ButtonLink, Card, cx, Empty, Field, inputClass, PageTitle, TeamTile } from "@/components/ui";
 import { addDays, fmtDay } from "@/lib/dates";
 import { pts } from "@/lib/format";
@@ -26,7 +27,7 @@ export default async function TeacherChallengesPage() {
     <div className="space-y-6">
       <PageTitle
         title="Eco challenges"
-        sub="Extra points for real eco actions. Each challenge has a QR code: print it and put it where the challenge happens."
+        sub="Extra points and leaves for real eco actions. Each challenge has a QR code: print it and put it where the challenge happens."
         actions={<ButtonLink href="/teacher/challenges/print" icon="qr">Print QR codes</ButtonLink>}
       />
 
@@ -41,7 +42,7 @@ export default async function TeacherChallengesPage() {
                   <TeamTile name={c.class_name} size="sm" />
                   <span className="font-bold">{c.challenge_title}</span>
                   <span className="text-stone-500">{fmtDay(c.claim_date)}</span>
-                  <span className="ml-auto font-display tabular text-2xl font-black text-leaf-600">+{pts(c.points)}</span>
+                  <span className="ml-auto font-display tabular text-2xl font-black text-pitch">+{pts(c.points)}</span>
                 </div>
                 <blockquote className="mt-3 border-l-4 border-sun-500 bg-white px-4 py-3 whitespace-pre-line">{c.answer}</blockquote>
                 <div className="mt-3 flex flex-wrap items-start gap-3">
@@ -112,14 +113,19 @@ export default async function TeacherChallengesPage() {
                   <p className="text-lg font-bold">{c.title}</p>
                   <p className="text-stone-600">{c.summary}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge tone={c.kind === "instant" ? "lagoon" : "sun"}>{c.kind === "instant" ? "Points on scan" : "Teacher checks"}</Badge>
+                    <Badge tone={c.kind === "instant" ? "lagoon" : "sun"}>{c.kind === "instant" ? "Given on scan" : "Teacher checks"}</Badge>
                     <Badge tone="grey">{REPEAT_LABEL[c.repeat_every]}</Badge>
                     {c.place && <Badge tone="grey" icon="qr">{c.place}</Badge>}
                     {!c.active && <Badge tone="red">Off</Badge>}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-display tabular text-3xl font-black text-leaf-600">+{pts(c.points)}</div>
+                  <div className="font-display tabular text-3xl font-black text-pitch">+{pts(c.points)} <span className="text-base font-bold text-stone-500">points</span></div>
+                  {c.leaves > 0 && (
+                    <div className="flex items-center justify-end gap-1 font-bold text-leaf-700">
+                      <Icon name="leaf" size={16} />+{c.leaves} leaves
+                    </div>
+                  )}
                   <div className="text-sm text-stone-500">{c.done_this_month} done this month</div>
                 </div>
               </div>
@@ -149,11 +155,12 @@ function ChallengeForm({ c }: { c?: TeacherChallenge }) {
       </div>
       <Field label="One-line summary"><input name="summary" defaultValue={c?.summary} required minLength={3} maxLength={200} className={inputClass} /></Field>
       <Field label="What the class has to do"><textarea name="steps" defaultValue={c?.steps} required minLength={3} maxLength={600} rows={3} className={inputClass} /></Field>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Points"><input name="points" type="number" min="0.5" max="50" step="0.5" defaultValue={c?.points ?? 2} required className={inputClass} /></Field>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="Points" hint="Counts for the leaderboard"><input name="points" type="number" min="0.5" max="50" step="0.5" defaultValue={c?.points ?? 2} required className={inputClass} /></Field>
+        <Field label="Leaves" hint="For the class garden, 0 to 100"><input name="leaves" type="number" min="0" max="100" step="1" defaultValue={c?.leaves ?? 3} required className={inputClass} /></Field>
         <Field label="How it's checked">
           <select name="kind" defaultValue={c?.kind ?? "instant"} className={inputClass}>
-            <option value="instant">Points when the QR is scanned</option>
+            <option value="instant">Given when the QR is scanned</option>
             <option value="review">Class writes it up, I approve</option>
           </select>
         </Field>

@@ -36,13 +36,27 @@ Each class is a team with a fixed colour; standings look like a scoreboard; the 
 | Feature | What it does | Where |
 |---|---|---|
 | **Monthly badges** | Six tiers (Tiny Sprout 100 · Green Keeper 200 · Aqua Guardian 350 · Earth Protector 500 · Eco Legend 650 · Planet Pioneer 800 points in one calendar month; teacher-editable, must stay in order). Computed live from the ledger. The first time a class reaches a tier, it wins that tier's garden item (seedling, butterfly, lotus pond, desert rose, Sidr, Golden Ghaf). | `badge_tiers`, `get_badges`, `app.class_badges`, `app.grant_badge_rewards`; `components/badges.tsx`, `badge-shelf.tsx` |
-| **Class garden** | One garden per **class** (no student accounts by design). Garden points = all points ever earned − points spent; spending never touches the leaderboard or badges. 18 spots (3 rows); full garden → new items wait in the "shed". Plants grow seed → sprout → young → fully grown, one stage per day they're watered. Plants are never removed. Shop prices teacher-editable. | `garden_items`, `garden_plants`, `garden_events`, `my_garden`, `garden_buy/water/move`; `/monitor/garden`, `components/garden-art.tsx` |
+| **Class garden** | One garden per **class** (no student accounts by design). Bought with **leaves** (see below), never points. 18 spots (3 rows); full garden → new items wait in the "shed". Plants grow seed → sprout → young → fully grown, one stage per day they're watered. Plants are never removed. Shop prices (in leaves) teacher-editable. | `garden_items`, `garden_plants`, `garden_events`, `my_garden`, `garden_buy/water/move`; `/monitor/garden`, `components/garden-art.tsx` |
 | **QR eco challenges** | Printable A4 posters with a QR code → `/c/<token>` → login if needed → challenge page. **instant** (recycle, refill, switch off: points on confirm, once a day, only reachable by scanning) and **review** (8 class projects: the class writes what it found, a teacher approves). Once per day/week/month/ever per class. Teacher can send back (with a reason) or void (points reversed). No challenges during the measuring week. | `eco_challenges`, `challenge_claims`, `claim_challenge`, `review_challenge_claim`, `void_challenge_claim`; `/monitor/challenges`, `/teacher/challenges`, `/teacher/challenges/print` |
+
+## Leaves: the garden currency (added 5 Nov 2026, migration `20261105100000_leaves.sql`)
+**Points = how well** a class did (leaderboard, badges; never spent). **Leaves = taking part** (only thing the garden shop takes; never touch points). Why: with one currency, the garden showed "points to spend" going down, so classes believed buying cost them their rank. Leaves reward doing the job whatever the result, so there's no reason to fudge numbers and weaker classes still grow a garden.
+
+| Leaves from | How many | How it's counted |
+|---|---|---|
+| Class check submitted | 5 | live from `daily_entries` (measuring week too) |
+| Peer check done | 3 | live from `peer_audits`, to the class that **did** the check |
+| AI bin photo / room photo | 3 / 2 | live from `ai_checks`, to the class that took it |
+| Eco challenge approved | the challenge's `leaves` (quick QR 3, projects = their points) | `challenge_claims.leaves` (copied at claim time) |
+| Badge reached in a month | 10 / 15 / 20 / 25 / 30 / 40 | `leaf_grants` kind `badge`, once per badge per month, kept for good |
+| Teacher | −500 to 500 with a reason | `leaf_grants` kind `teacher` (Bonus points & leaves page) |
+
+Shop: seedling 15, marigold 25, butterfly 30, sunflower/bench 40, bulbul 50, bush 60, neem 120, date palm 180, ghaf 250. A typical class earns ~13 leaves a school day. Balance = `app.leaf_sources` total − leaves spent (`app.garden_balance`). Rates are per school in `leaf_rates` (no screen). The monitor header shows the balance (`my_leaves`, read-only, counts badge leaves not yet handed out); badge leaves are handed out with a message on the next `my_garden` (Today or Garden page).
 
 Naming: `class_challenges` = the AI-drafted **weekly** challenge text (AI migration). `eco_challenges` = the **QR** challenges. Different things.
 
 ## Data model (supabase/migrations)
-`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges` · `badge_tiers` · `garden_items` · `garden_plants` · `garden_events` · `eco_challenges` · `challenge_claims` (ledger source `challenge`).
+`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges` · `badge_tiers` · `garden_items` · `garden_plants` · `garden_events` · `eco_challenges` · `challenge_claims` (ledger source `challenge`) · `leaf_rates` · `leaf_grants` (append-only).
 
 ## Security model
 - Browser/server clients get **SELECT only** (RLS-filtered). Every write is a `SECURITY DEFINER` RPC that checks the caller's role first.
@@ -59,6 +73,6 @@ Naming: `class_challenges` = the AI-drafted **weekly** challenge text (AI migrat
 - `src/app/display/*`: corridor screen · `src/app/api/export/route.ts`: CSV
 - `src/lib/ai/*`: AI provider switch, prompts, reply validation, data context for Ask EcoPoints
 - `src/app/teacher/ai/*` (AI checks & flags) · `src/app/teacher/assistant/*` (Ask EcoPoints + challenges)
-- Rewards: `src/lib/rewards.ts` (types) · `src/app/monitor/{layout,tabs}.tsx` (Today / Garden / Challenges) · `src/app/monitor/garden/*` · `src/app/monitor/challenges/*` · `src/app/c/[token]` (QR landing) · `src/lib/next-path.ts` (safe return after login) · `src/app/teacher/{challenges,rewards}/*` · `src/app/teacher/rewards-actions.ts`
-- `supabase/tests/ecopoints_checks.sql`: the rules, as tests (v1 + AI) · `supabase/tests/rewards_checks.sql`: badges, gardens, challenges
+- Rewards: `src/lib/rewards.ts` (types) · `src/app/monitor/{layout,tabs}.tsx` (Today / Garden / Challenges) · `src/app/monitor/leaf-counter.tsx` (header leaves; the garden updates it with a browser event) · `src/app/monitor/garden/*` · `src/app/monitor/challenges/*` · `src/app/c/[token]` (QR landing) · `src/lib/next-path.ts` (safe return after login) · `src/app/teacher/{challenges,rewards}/*` · `src/app/teacher/rewards-actions.ts`
+- `supabase/tests/ecopoints_checks.sql`: the rules, as tests (v1 + AI) · `supabase/tests/rewards_checks.sql`: badges, gardens, leaves, challenges (needs both rewards migrations)
 - `supabase/seed-demo-month.sql` / `seed-demo-month-undo.sql`: fake month of data for demos, and the clean-up (see GOTCHAS 25)

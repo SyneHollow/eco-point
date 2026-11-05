@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { CREDIT } from "@/lib/config";
 import { Icon, type IconName } from "@/components/icons";
 
 export function cx(...parts: Array<string | false | null | undefined>) {
@@ -247,7 +246,6 @@ export function Empty({ children }: { children: ReactNode }) {
 export function Footer({ dark = false }: { dark?: boolean }) {
   return (
     <footer className={cx("no-print mt-auto px-4 py-6 text-center text-sm", dark ? "text-leaf-200" : "text-stone-500")}>
-      {CREDIT}
     </footer>
   );
 }

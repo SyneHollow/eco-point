@@ -31,7 +31,7 @@ export async function voidAiCheck(_p: ActionState, fd: FormData): Promise<Action
   const { error } = await supabase.rpc("void_ai_check", { p_id: id, p_reason: str(fd, "reason") });
   if (error) return { error: errorMessage(error) };
   revalidatePath("/teacher", "layout");
-  return { ok: true, message: "Voided. Its points were reversed and the class can retake the photo today." };
+  return { ok: true, message: "Voided. Its points and leaves were taken back, and the class can retake the photo today." };
 }
 
 export async function saveAiSettings(_p: ActionState, fd: FormData): Promise<ActionState> {

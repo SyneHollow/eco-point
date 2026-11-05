@@ -41,7 +41,7 @@ export async function voidEntry(_p: ActionState, fd: FormData): Promise<ActionSt
     p_reason: str(fd, "reason"),
   });
   if (error) return { error: errorMessage(error) };
-  return done("Voided. Its points were reversed.");
+  return done("Voided. Its points and leaves were taken back.");
 }
 
 export async function closeMonth(_p: ActionState, fd: FormData): Promise<ActionState> {

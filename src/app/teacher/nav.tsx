@@ -17,7 +17,7 @@ const GROUPS: Array<{ label: string; links: Array<[string, string, IconName]> }>
   {
     label: "Competition",
     links: [
-      ["/teacher/points", "Bonus points", "star"],
+      ["/teacher/points", "Bonus points & leaves", "star"],
       ["/teacher/challenges", "Eco challenges", "qr"],
       ["/teacher/rewards", "Badges & gardens", "medal"],
       ["/teacher/assistant", "Ask EcoPoints", "chat"],

@@ -18,7 +18,8 @@ export function BadgeShelf({ badges }: { badges: ClassBadges }) {
         </p>
       </div>
       <p className="mt-1 max-w-2xl text-stone-600">
-        Your class earns a badge when its points this month reach the target. Badges start again each month; plants you win stay in your garden.
+        Your class earns a badge when its points this month reach the target. Every badge also gives leaves, every month you reach it. Badges
+        start again each month; plants and leaves you win stay in your garden.
       </p>
       <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
         {badges.tiers.map((t) => (
@@ -28,6 +29,7 @@ export function BadgeShelf({ badges }: { badges: ClassBadges }) {
             <p className="text-sm text-stone-500">
               {t.threshold} points{t.reached ? ", earned" : ""}
             </p>
+            {t.leaves > 0 && <p className="text-sm font-semibold text-leaf-700">+{t.leaves} leaves</p>}
             {t.reward_name && <p className="text-sm text-leaf-600">Wins a {t.reward_name}</p>}
           </li>
         ))}

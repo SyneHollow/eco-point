@@ -6,7 +6,7 @@ export type GardenItem = {
   code: string;
   name: string;
   kind: GardenItemKind;
-  cost: number | null; // null = only won with a badge
+  cost: number | null; // in leaves; null = only won with a badge
   grows: boolean;
   info: string;
   badge: string | null; // badge that wins it, if any
@@ -20,7 +20,7 @@ export type Plant = {
   waterings: number;
   watered_today: boolean;
   source: "bought" | "reward";
-  cost: number;
+  cost: number; // leaves paid
   badge: string | null;
   planted_on: string;
 };
@@ -30,6 +30,7 @@ export type BadgeTier = {
   name: string;
   tagline: string;
   threshold: number;
+  leaves: number; // won each month the badge is reached
   reward_item: string | null;
   reward_name: string | null;
   reached: boolean;
@@ -42,6 +43,12 @@ export type ClassBadges = {
   history: Array<{ month: string; code: string; name: string; points: number }>;
 };
 
+export type LeafRates = { class_check: number; peer_check: number; bin_photo: number; room_photo: number; ai_enabled: boolean };
+
+/** Where a class's leaves came from, in leaves. */
+export type LeafSources = { class_checks: number; peer_checks: number; photos: number; challenges: number; badges: number; teacher: number };
+
+/** The garden. earned / spent / available are LEAVES, never points. */
 export type Garden = {
   today: string;
   class: { id: string; name: string };
@@ -50,11 +57,16 @@ export type Garden = {
   spent: number;
   available: number;
   new_rewards: Array<{ badge: string; item: string; name: string }>;
+  new_leaves: Array<{ badge: string; leaves: number; month: string }>;
+  sources: LeafSources;
+  rates: LeafRates;
   items: GardenItem[];
   plants: Plant[];
-  events: Array<{ kind: "bought" | "reward" | "grew"; detail: string; date: string }>;
+  events: Array<{ kind: "bought" | "reward" | "grew" | "leaves"; detail: string; date: string }>;
   badges: ClassBadges;
 };
+
+export type MyLeaves = { earned: number; spent: number; available: number };
 
 export const STAGE_NAMES = ["Seed", "Sprout", "Young plant", "Fully grown"] as const;
 export const PLOTS = 18;
@@ -67,6 +79,7 @@ export type Challenge = {
   steps: string;
   place: string | null;
   points: number;
+  leaves: number;
   kind: "instant" | "review";
   repeat_every: "day" | "week" | "month" | "once";
   status: "approved" | "pending" | null;

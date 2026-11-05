@@ -7,7 +7,7 @@ import { Icon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import { requireMonitor } from "@/lib/session";
 import { fmtDay, fmtLongDay, fmtTime } from "@/lib/dates";
-import { pts } from "@/lib/format";
+import { leaves, pts } from "@/lib/format";
 import { AuditForm, EntryForm } from "./forms";
 import { PhotoCheck } from "./photo-check";
 
@@ -60,6 +60,7 @@ export default async function MonitorPage() {
 
   const { data: gardenData } = await supabase.rpc("my_garden");
   const garden = (gardenData ?? null) as Garden | null;
+  const rates = garden?.rates ?? null;            // leaves per job (null if the leaves migration isn't installed)
 
   return (
     <>
@@ -95,7 +96,7 @@ export default async function MonitorPage() {
         )}
 
         <ol className="relative space-y-5 before:absolute before:top-5 before:bottom-5 before:left-[17px] before:w-0.5 before:bg-line">
-          <Step n={++n} title="Today's class check" state={t.entry ? "done" : "todo"}>
+          <Step n={++n} title="Today's class check" state={t.entry ? "done" : "todo"} leaves={rates?.class_check}>
             {t.entry ? (
               <div className="space-y-3">
                 <DoneLine>Submitted at {fmtTime(t.entry.submitted_at, me.timezone)}</DoneLine>
@@ -122,7 +123,7 @@ export default async function MonitorPage() {
           </Step>
 
           {ai?.enabled && (
-            <Step n={++n} title="AI bin check (after lunch)" state={ai.bin ? "done" : t.entry ? "todo" : "locked"}>
+            <Step n={++n} title="AI bin check (after lunch)" state={ai.bin ? "done" : t.entry ? "todo" : "locked"} leaves={rates?.bin_photo}>
               {t.entry || ai.bin ? (
                 <PhotoCheck
                   kind="bin"
@@ -148,7 +149,7 @@ export default async function MonitorPage() {
           )}
 
           {hasPeer && t.audit_target && (
-            <Step n={++n} title={`Peer check: visit ${t.audit_target.name}`} state={t.audit_done ? "done" : "todo"} target={t.audit_target.name}>
+            <Step n={++n} title={`Peer check: visit ${t.audit_target.name}`} state={t.audit_done ? "done" : "todo"} target={t.audit_target.name} leaves={rates?.peer_check}>
               {t.audit_done ? (
                 <div className="space-y-3">
                   <DoneLine>
@@ -164,7 +165,10 @@ export default async function MonitorPage() {
                   </ul>
                   {ai?.enabled && (
                     <div className="pt-2">
-                      <p className="mb-2 text-lg font-bold">Add a room photo as evidence</p>
+                      <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-lg font-bold">
+                        Add a room photo as evidence
+                        {rates && rates.room_photo > 0 && <LeafChip n={rates.room_photo} done={!!ai.room} />}
+                      </p>
                       <PhotoCheck
                         kind="room"
                         intro={`Photograph ${t.audit_target.name}'s empty room. The AI checks the lights and litter, so peer checks stay fair.`}
@@ -259,6 +263,17 @@ function SideRewards({ garden }: { garden: Garden }) {
   const got = [...b.tiers].reverse().find((t) => t.reached);
   return (
     <aside className="space-y-5" aria-label="Rewards">
+      {(garden.new_leaves?.length > 0 || garden.new_rewards.length > 0) && (
+        <p role="status" className="flex items-start gap-2 rounded-xl bg-team-lime/40 px-4 py-3 font-bold text-leaf-800">
+          <Icon name="medal" size={20} weight="fill" className="mt-0.5 shrink-0" />
+          <span>
+            {[
+              ...garden.new_rewards.map((x) => `${x.badge} badge: you won a ${x.name}.`),
+              ...(garden.new_leaves ?? []).map((x) => `${x.badge} badge: +${leaves(x.leaves)} for your garden.`),
+            ].join(" ")}
+          </span>
+        </p>
+      )}
       <section className="rounded-xl border border-line bg-white p-5">
         <h2 className="text-lg font-bold">Badge this month</h2>
         <div className="mt-3 flex items-center gap-4">
@@ -287,9 +302,9 @@ function SideRewards({ garden }: { garden: Garden }) {
         <span className="flex items-center justify-between gap-3 px-5 py-3">
           <span>
             <span className="block font-bold group-hover:underline group-hover:underline-offset-4">Your class garden</span>
-            <span className="text-stone-500">{pts(garden.available)} garden points to spend</span>
+            <span className="text-stone-500">{leaves(Math.max(0, garden.available))} to spend</span>
           </span>
-          <Icon name="plant" size={24} className="text-leaf-600" />
+          <Icon name="leaf" size={24} className="text-leaf-500" />
         </span>
       </Link>
     </aside>
@@ -301,12 +316,15 @@ function Step({
   n,
   title,
   state,
+  leaves,
   children,
 }: {
   n: number;
   title: string;
   state: "done" | "todo" | "locked" | "info";
   target?: string;
+  /** Leaves this job earns for the garden (shown on the step). */
+  leaves?: number;
   children: React.ReactNode;
 }) {
   const marker = {
@@ -324,13 +342,27 @@ function Step({
         {state === "done" ? <Icon name="check" size={20} /> : n}
       </span>
       <section className={cx("rounded-xl border bg-white", state === "todo" ? "border-pitch/40" : "border-line")}>
-        <h2 className="px-5 pt-4 text-xl leading-snug font-bold">
-          <span className="sr-only">{state === "info" ? "" : `Step ${n}${state === "done" ? ", done" : state === "locked" ? ", not yet" : ""}: `}</span>
-          {title}
-        </h2>
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-5 pt-4">
+          <h2 className="text-xl leading-snug font-bold">
+            <span className="sr-only">{state === "info" ? "" : `Step ${n}${state === "done" ? ", done" : state === "locked" ? ", not yet" : ""}: `}</span>
+            {title}
+          </h2>
+          {!!leaves && leaves > 0 && <LeafChip n={leaves} done={state === "done"} />}
+        </div>
         <div className="p-5 pt-3">{children}</div>
       </section>
     </li>
+  );
+}
+
+/** "+5 leaves" (to earn) or "5 leaves earned". Leaves are for doing the job, whatever the score. */
+function LeafChip({ n, done }: { n: number; done: boolean }) {
+  return (
+    <span className={cx("inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-sm font-bold",
+      done ? "bg-team-lime/40 text-leaf-800" : "border border-leaf-300 text-leaf-700")}>
+      <Icon name="leaf" size={16} weight={done ? "fill" : undefined} />
+      {done ? `${n} ${n === 1 ? "leaf" : "leaves"} earned` : `+${n} ${n === 1 ? "leaf" : "leaves"}`}
+    </span>
   );
 }
 

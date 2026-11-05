@@ -37,3 +37,10 @@ do $$ begin
     perform app.seed_rewards(id) from public.schools where slug = 'school';
   end if;
 end $$;
+
+-- Leaves (the garden currency). Needs migration 20261105100000_leaves.sql.
+do $$ begin
+  if to_regprocedure('app.seed_leaves(uuid)') is not null then
+    perform app.seed_leaves(id) from public.schools where slug = 'school';
+  end if;
+end $$;

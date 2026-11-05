@@ -30,6 +30,11 @@ EcoPoints is a league between classes, so it looks like one: each class is a tea
 - Buttons (`buttonClass`): ≥ 44px tall; primary has a darker bottom edge and moves 1px when pressed. Variants: `primary`, `secondary`, `light` (on dark), `ghostDark`, `sun`, `danger`.
 - Inputs (`inputClass`): 16px text (phones don't zoom), 1.5px border at 4.9:1.
 
+## Leaves (the garden currency)
+- Always shown with the Phosphor **leaf** icon and the word "leaves"; points are never shown with a leaf. Keep the two visibly different: points in `pitch` numbers, leaves in `leaf-700/800` text or on `team-lime/40` chips (9:1 contrast).
+- `LeafChip` on Today's steps: outline "+5 leaves" before, filled "5 leaves earned" after. Monitor header: lime circle + count, links to the garden.
+- Write "8 more leaves" (not "8 leaves more"); use `leaves(n)` from `lib/format.ts` for "1 leaf" / "15 leaves".
+
 ## Garden and badge art
 - All hand-drawn SVG in `components/garden-art.tsx` and `components/badges.tsx`; no image files, no copied artwork. Plants stand on (0,0) and grow upward.
 - UAE-rooted items on purpose: Ghaf (national tree), date palm, Sidr, desert rose, white-eared bulbul.

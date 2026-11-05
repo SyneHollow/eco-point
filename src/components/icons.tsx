@@ -39,6 +39,7 @@ import { StorefrontIcon } from "@phosphor-icons/react/dist/ssr/Storefront";
 import { MedalIcon } from "@phosphor-icons/react/dist/ssr/Medal";
 import { SparkleIcon } from "@phosphor-icons/react/dist/ssr/Sparkle";
 import { PackageIcon } from "@phosphor-icons/react/dist/ssr/Package";
+import { LeafIcon } from "@phosphor-icons/react/dist/ssr/Leaf";
 
 export type IconName = keyof typeof ICONS;
 
@@ -74,6 +75,7 @@ const ICONS = {
   back: ArrowLeftIcon,
   qr: QrCodeIcon,
   plant: PlantIcon,
+  leaf: LeafIcon,
   drop: DropIcon,
   move: ArrowsOutCardinalIcon,
   history: ClockCounterClockwiseIcon,

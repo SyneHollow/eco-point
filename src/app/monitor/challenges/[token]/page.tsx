@@ -6,7 +6,7 @@ import { Icon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import { requireMonitor } from "@/lib/session";
 import { fmtLongDay } from "@/lib/dates";
-import { pts } from "@/lib/format";
+import { leaves, pts } from "@/lib/format";
 import { REPEAT_AGAIN, REPEAT_LABEL, type MyChallenges } from "@/lib/rewards";
 import { claimChallenge } from "../actions";
 
@@ -50,15 +50,26 @@ export default async function ChallengePage({ params }: { params: Promise<{ toke
             <h1 className="font-display text-5xl leading-none font-black">{x.title}</h1>
             <p className="mt-2 text-lg text-stone-600">{x.summary}</p>
           </div>
-          <div className="shrink-0 rounded-xl bg-leaf-50 px-4 py-2 text-center">
-            <div className="font-display tabular text-4xl font-black text-leaf-600">+{pts(x.points)}</div>
-            <div className="text-sm font-bold text-leaf-700">points</div>
+          <div className="flex shrink-0 flex-col gap-1.5 sm:flex-row">
+            <div className="rounded-xl bg-chalk px-4 py-2 text-center">
+              <div className="font-display tabular text-4xl font-black text-pitch">+{pts(x.points)}</div>
+              <div className="text-sm font-bold text-stone-600">{Number(x.points) === 1 ? "point" : "points"}</div>
+            </div>
+            {x.leaves > 0 && (
+              <div className="rounded-xl bg-team-lime/40 px-4 py-2 text-center">
+                <div className="font-display tabular text-4xl font-black text-leaf-800">+{x.leaves}</div>
+                <div className="flex items-center justify-center gap-1 text-sm font-bold text-leaf-800">
+                  <Icon name="leaf" size={14} />
+                  {x.leaves === 1 ? "leaf" : "leaves"}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge tone="grey">{REPEAT_LABEL[x.repeat_every]}</Badge>
           <Badge tone={x.kind === "instant" ? "lagoon" : "sun"} icon={x.kind === "instant" ? "qr" : "records"}>
-            {x.kind === "instant" ? "Points straight away" : "Your teacher checks it"}
+            {x.kind === "instant" ? "Points and leaves straight away" : "Your teacher checks it"}
           </Badge>
         </div>
         <h2 className="mt-6 text-lg font-bold">What to do</h2>
@@ -74,9 +85,11 @@ export default async function ChallengePage({ params }: { params: Promise<{ toke
       {!c.open && c.points_start_date ? (
         <Banner>Eco challenges open when points start on {fmtLongDay(c.points_start_date)}.</Banner>
       ) : done ? (
-        <Banner tone="leaf" icon="check">Done! +{pts(x.points)} points for your class. {REPEAT_AGAIN[x.repeat_every]}</Banner>
+        <Banner tone="leaf" icon="check">
+          Done! +{pts(x.points)} points{x.leaves > 0 ? ` and +${leaves(x.leaves)}` : ""} for your class. {REPEAT_AGAIN[x.repeat_every]}
+        </Banner>
       ) : pending ? (
-        <Banner icon="clock">Sent to your teacher. The points arrive when they approve it.</Banner>
+        <Banner icon="clock">Sent to your teacher. The points and leaves arrive when they approve it.</Banner>
       ) : (
         <section className="rounded-2xl border border-line bg-white p-6">
           {x.last_rejected && (

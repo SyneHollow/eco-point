@@ -56,7 +56,6 @@ export default async function DisplayPage() {
       />
       <footer className="flex justify-between gap-8 px-12 py-5 text-lg text-leaf-200">
         <span>Points come from daily class checks, fair peer checks, AI-checked bin photos and teacher bonuses.</span>
-        <span className="shrink-0">Built with Nexayra Technologies</span>
       </footer>
     </div>
   );

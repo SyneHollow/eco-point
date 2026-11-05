@@ -3,7 +3,7 @@
 --
 -- Run in: Supabase SQL editor, project Eco-Point.
 -- DELETES every class check, peer check, AI check, points row (incl. bonuses),
--- weekly challenge, closed month, eco challenge done, and every class garden,
+-- weekly challenge, closed month, eco challenge done, every class garden and every leaf given,
 -- and clears the points start date. Badge targets, shop prices and the eco
 -- challenges themselves stay.
 -- KEEPS the school, classes, PINs/logins, teachers, checklist and the activity log.
@@ -29,6 +29,9 @@ do $$ begin
     execute 'alter table public.garden_events disable trigger user';
     execute 'alter table public.challenge_claims disable trigger user';
   end if;
+  if to_regclass('public.leaf_grants') is not null then
+    execute 'alter table public.leaf_grants disable trigger user';
+  end if;
 end $$;
 
 delete from public.points_ledger;
@@ -38,6 +41,7 @@ do $$ begin
     execute 'delete from public.garden_plants';
     execute 'delete from public.challenge_claims';
   end if;
+  if to_regclass('public.leaf_grants') is not null then execute 'delete from public.leaf_grants'; end if;
 end $$;
 do $$ begin
   if to_regclass('public.ai_checks') is not null then execute 'delete from public.ai_checks'; end if;
@@ -64,6 +68,9 @@ do $$ begin
     execute 'alter table public.garden_plants enable trigger user';
     execute 'alter table public.garden_events enable trigger user';
     execute 'alter table public.challenge_claims enable trigger user';
+  end if;
+  if to_regclass('public.leaf_grants') is not null then
+    execute 'alter table public.leaf_grants enable trigger user';
   end if;
 end $$;
 

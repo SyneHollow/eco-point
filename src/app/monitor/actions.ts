@@ -28,7 +28,7 @@ export async function submitEntry(_prev: ActionState, fd: FormData): Promise<Act
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("submit_daily_entry", { p_present: present, p_values: values });
   if (error) return { error: errorMessage(error) };
-  revalidatePath("/monitor");
+  revalidatePath("/monitor", "layout");   // header leaves too
   return {
     ok: true,
     message: data?.baseline ? "Saved. (Measuring week: no points yet.)" : `Saved! Your class earned ${pts(data?.points)} points.`,
@@ -42,6 +42,6 @@ export async function submitAudit(_prev: ActionState, fd: FormData): Promise<Act
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("submit_peer_audit", { p_values: values });
   if (error) return { error: errorMessage(error) };
-  revalidatePath("/monitor");
+  revalidatePath("/monitor", "layout");   // header leaves too
   return { ok: true, message: `Thanks! ${data?.target} has been checked.` };
 }

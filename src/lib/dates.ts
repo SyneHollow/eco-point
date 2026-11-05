@@ -49,6 +49,11 @@ export function fmtMonth(d: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "long", year: "numeric" }).format(toUTC(d));
 }
 
+/** The school-day of a timestamp: "Thu 5 Nov". */
+export function fmtStampDay(ts: string, timeZone = "Asia/Dubai") {
+  return new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", day: "numeric", month: "short" }).format(new Date(ts));
+}
+
 export function fmtTime(ts: string, timeZone = "Asia/Dubai") {
   return new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit" }).format(new Date(ts));
 }

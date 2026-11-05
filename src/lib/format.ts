@@ -24,3 +24,9 @@ export function plural(n: number | string | null | undefined, word: string, many
   const v = Number(n ?? 0);
   return `${num(v)} ${v === 1 ? word : many}`;
 }
+
+/** "1 leaf", "15 leaves" (the garden currency; always whole numbers) */
+export function leaves(n: number | string | null | undefined) {
+  const v = Math.round(Number(n ?? 0));
+  return `${num(v)} ${Math.abs(v) === 1 ? "leaf" : "leaves"}`;
+}

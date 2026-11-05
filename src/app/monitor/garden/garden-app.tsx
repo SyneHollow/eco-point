@@ -6,14 +6,30 @@ import { Icon, type IconName } from "@/components/icons";
 import { GardenBackdrop, ItemThumb, PLOT_ORDER, PlantArt, PlotSoil, SCENE_VIEWBOX, plotXY } from "@/components/garden-art";
 import { BadgeShelf } from "@/components/badge-shelf";
 import { fmtDay } from "@/lib/dates";
-import { pts } from "@/lib/format";
+import { leaves, num } from "@/lib/format";
 import { STAGE_NAMES, type Garden, type GardenItem, type Plant } from "@/lib/rewards";
 import { buyItem, movePlant, waterPlant, type GardenResult } from "./actions";
+import { announceLeaves } from "../leaf-counter";
 
 type Toast = { tone: "ok" | "error"; text: string } | null;
 type Celebrate = { item: string; title: string; text: string } | null;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** "8 more leaves", "1 more leaf" */
+const moreLeaves = (n: number) => {
+  const v = Math.ceil(n);
+  return `${num(v)} more ${v === 1 ? "leaf" : "leaves"}`;
+};
+
+/** "Aqua Guardian badge: +20 leaves for your garden!" */
+function badgeLeavesText(list: Garden["new_leaves"]) {
+  if (!list.length) return null;
+  const total = list.reduce((a, b) => a + b.leaves, 0);
+  return list.length === 1
+    ? `${list[0].badge} badge: +${leaves(total)} for your garden!`
+    : `${list.length} badges won: +${leaves(total)} for your garden!`;
+}
 const GROUPS: Array<{ label: string; test: (i: GardenItem) => boolean }> = [
   { label: "Plants and flowers", test: (i) => i.cost !== null && (i.kind === "plant" || i.kind === "flower") },
   { label: "Trees", test: (i) => i.cost !== null && i.kind === "tree" },
@@ -29,13 +45,15 @@ export function GardenApp({ initial }: { initial: Garden }) {
   const [grew, setGrew] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [panel, setPanel] = useState<"shop" | "history">("shop");
-  const [toast, setToast] = useState<Toast>(null);
+  const firstLeaves = badgeLeavesText(initial.new_leaves);
+  const [toast, setToast] = useState<Toast>(firstLeaves && !initial.new_rewards.length ? { tone: "ok", text: firstLeaves } : null);
   const [celebrate, setCelebrate] = useState<Celebrate>(
     initial.new_rewards.length
       ? {
           item: initial.new_rewards[0].item,
           title: "New badge reward!",
-          text: initial.new_rewards.map((r) => `${r.badge} badge: you won a ${r.name}.`).join(" ") + " It's in your garden now.",
+          text: initial.new_rewards.map((r) => `${r.badge} badge: you won a ${r.name}.`).join(" ") + " It's in your garden now." +
+            (firstLeaves ? ` ${firstLeaves}` : ""),
         }
       : null,
   );
@@ -47,9 +65,12 @@ export function GardenApp({ initial }: { initial: Garden }) {
   const mover = garden.plants.find((p) => p.id === moving) ?? null;
   const growing = garden.plants.filter((p) => items.get(p.item)?.grows);
   const grown = growing.filter((p) => p.stage === 3).length;
+  const wallet = Math.max(0, garden.available);
   const nextUnlock = garden.items
-    .filter((i) => i.cost !== null && i.cost > garden.available)
+    .filter((i) => i.cost !== null && i.cost > wallet)
     .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0))[0];
+
+  useEffect(() => announceLeaves(garden.available), [garden.available]);   // keep the header count in step
 
   useEffect(() => {
     if (!toast) return;
@@ -63,9 +84,12 @@ export function GardenApp({ initial }: { initial: Garden }) {
       return false;
     }
     setGarden(res.garden);
+    const won = badgeLeavesText(res.garden.new_leaves);
     if (res.garden.new_rewards.length) {
       const r = res.garden.new_rewards[0];
-      setCelebrate({ item: r.item, title: "New badge reward!", text: `${r.badge} badge: you won a ${r.name}. It's in your garden now.` });
+      setCelebrate({ item: r.item, title: "New badge reward!", text: `${r.badge} badge: you won a ${r.name}. It's in your garden now.${won ? ` ${won}` : ""}` });
+    } else if (won) {
+      setToast({ tone: "ok", text: won });
     }
     return true;
   }
@@ -151,18 +175,24 @@ export function GardenApp({ initial }: { initial: Garden }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-5xl font-black">Class garden</h1>
-          <p className="mt-1 hidden max-w-xl text-stone-600 sm:block">Every point your class earns helps this garden grow. Spending points here never lowers your score.</p>
+          <p className="mt-1 max-w-xl text-stone-600">
+            Your class earns leaves for doing its eco jobs. Spend them here. Leaves and points are separate, so spending leaves never touches
+            your points or your place on the leaderboard.
+          </p>
         </div>
       </div>
 
-      <section aria-label="Garden points" className="grid grid-cols-3 divide-x divide-line rounded-xl border border-line bg-white">
+      <section aria-label="Leaves" className="grid grid-cols-3 divide-x divide-line rounded-xl border border-line bg-white">
         <div className="px-3 py-3 sm:px-5 sm:py-4">
-          <div className="font-display tabular text-3xl font-black sm:text-5xl" aria-live="polite">{pts(garden.available)}</div>
-          <div className="text-sm font-semibold text-stone-500 sm:text-base">Points to spend</div>
+          <div className="flex items-center gap-2">
+            <Icon name="leaf" size={28} className="hidden shrink-0 text-leaf-500 sm:block" />
+            <span className="font-display tabular text-3xl font-black sm:text-5xl" aria-live="polite">{num(wallet)}</span>
+          </div>
+          <div className="text-sm font-semibold text-stone-500 sm:text-base">Leaves to spend</div>
         </div>
         <div className="px-3 py-3 sm:px-5 sm:py-4">
-          <div className="font-display tabular text-3xl font-black sm:text-5xl">{pts(garden.earned)}</div>
-          <div className="text-sm font-semibold text-stone-500 sm:text-base">Earned in total</div>
+          <div className="font-display tabular text-3xl font-black sm:text-5xl">{num(garden.earned)}</div>
+          <div className="text-sm font-semibold text-stone-500 sm:text-base">Leaves earned</div>
         </div>
         <div className="px-3 py-3 sm:px-5 sm:py-4">
           <div className="font-display tabular text-3xl font-black sm:text-5xl">
@@ -178,10 +208,10 @@ export function GardenApp({ initial }: { initial: Garden }) {
           <ItemThumb item={nextUnlock.code} size={48} />
           <div className="min-w-0 flex-1">
             <p>
-              <strong>{Math.ceil(nextUnlock.cost - garden.available)} more points</strong> to unlock a {nextUnlock.name}
+              <strong>{moreLeaves(nextUnlock.cost - wallet)}</strong> to unlock a {nextUnlock.name}
             </p>
             <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-stone-100" aria-hidden="true">
-              <div className="h-full rounded-full bg-leaf-600 transition-[width] duration-700" style={{ width: `${Math.max(2, Math.min(100, (garden.available / nextUnlock.cost) * 100))}%` }} />
+              <div className="h-full rounded-full bg-leaf-600 transition-[width] duration-700" style={{ width: `${Math.max(2, Math.min(100, (wallet / nextUnlock.cost) * 100))}%` }} />
             </div>
           </div>
         </div>
@@ -280,6 +310,7 @@ export function GardenApp({ initial }: { initial: Garden }) {
               </ul>
             </section>
           )}
+          <HowToEarn garden={garden} />
         </div>
 
         <div className="space-y-4">
@@ -322,7 +353,7 @@ export function GardenApp({ initial }: { initial: Garden }) {
                         <h2 className="mb-2 font-bold text-stone-500">{g.label}</h2>
                         <ul className="space-y-2">
                           {list.map((it) => (
-                            <ShopRow key={it.code} item={it} available={garden.available} busy={busy}
+                            <ShopRow key={it.code} item={it} available={wallet} busy={busy}
                               won={garden.plants.some((p) => p.item === it.code && p.source === "reward")}
                               onBuy={() => buy(it)} />
                           ))}
@@ -340,8 +371,9 @@ export function GardenApp({ initial }: { initial: Garden }) {
                       {garden.events.map((e, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <span className={cx("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                            e.kind === "reward" ? "bg-sun-100 text-sun-700" : e.kind === "grew" ? "bg-lagoon-100 text-lagoon-700" : "bg-leaf-100 text-leaf-700")}>
-                            <Icon name={e.kind === "reward" ? "medal" : e.kind === "grew" ? "sparkle" : "plant"} size={16} />
+                            e.kind === "reward" ? "bg-sun-100 text-sun-700" : e.kind === "grew" ? "bg-lagoon-100 text-lagoon-700"
+                              : e.kind === "leaves" ? "bg-team-lime/40 text-leaf-800" : "bg-leaf-100 text-leaf-700")}>
+                            <Icon name={e.kind === "reward" ? "medal" : e.kind === "grew" ? "sparkle" : e.kind === "leaves" ? "leaf" : "plant"} size={16} />
                           </span>
                           <span>
                             <span className="block font-semibold">{e.detail}</span>
@@ -374,6 +406,55 @@ export function GardenApp({ initial }: { initial: Garden }) {
   );
 }
 
+/** How leaves are earned, with what this class has earned from each so far. */
+function HowToEarn({ garden }: { garden: Garden }) {
+  const r = garden.rates;
+  const src = garden.sources;
+  const tierLeaves = garden.badges.tiers.map((t) => t.leaves).filter((n) => n > 0);
+  const rows: Array<{ icon: IconName; label: string; rate: string; got: number; show: boolean }> = [
+    { icon: "checklist", label: "Class check", rate: `+${r.class_check} every school day`, got: src.class_checks, show: r.class_check > 0 },
+    { icon: "users", label: "Peer check of another class", rate: `+${r.peer_check} each time`, got: src.peer_checks, show: r.peer_check > 0 },
+    { icon: "camera", label: "Bin and room photos", rate: `+${r.bin_photo} bin photo, +${r.room_photo} room photo`, got: src.photos, show: r.ai_enabled || src.photos !== 0 },
+    { icon: "qr", label: "Eco challenges", rate: "Each one shows its leaves", got: src.challenges, show: true },
+    { icon: "medal", label: "Badges", rate: tierLeaves.length ? `+${Math.min(...tierLeaves)} to +${Math.max(...tierLeaves)}, every month` : "Every month", got: src.badges, show: tierLeaves.length > 0 },
+    { icon: "star", label: "From your teacher", rate: "For eco drives and extra effort", got: src.teacher, show: src.teacher !== 0 },
+  ];
+  return (
+    <section className="rounded-xl border border-line bg-white p-5" aria-labelledby="earn-title">
+      <h2 id="earn-title" className="flex items-center gap-2 text-lg font-bold">
+        <Icon name="leaf" size={20} className="text-leaf-500" />
+        How your class earns leaves
+      </h2>
+      <p className="mt-1 text-stone-600">For doing the job, whatever the score. A record your teacher cancels loses its leaves.</p>
+      <table className="mt-3 w-full text-[15px]">
+        <thead className="sr-only">
+          <tr><th>Job</th><th>Leaves your class has earned from it</th></tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.filter((x) => x.show).map((x) => (
+            <tr key={x.label}>
+              <td className="py-2.5 pr-3">
+                <span className="flex items-start gap-3">
+                  <Icon name={x.icon} size={20} className="mt-0.5 shrink-0 text-stone-500" />
+                  <span>
+                    <span className="block font-semibold">{x.label}</span>
+                    <span className="text-sm text-stone-500">{x.rate}</span>
+                  </span>
+                </span>
+              </td>
+              <td className="py-2.5 text-right whitespace-nowrap">
+                <span className="font-display tabular text-2xl font-extrabold">{num(x.got)}</span>
+                <span className="sr-only"> leaves so far</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-right text-sm text-stone-500">Leaves earned so far</p>
+    </section>
+  );
+}
+
 function ShopRow({ item, available, busy, won, onBuy }: { item: GardenItem; available: number; busy: boolean; won: boolean; onBuy: () => void }) {
   const can = item.cost !== null && available >= item.cost;
   return (
@@ -382,13 +463,13 @@ function ShopRow({ item, available, busy, won, onBuy }: { item: GardenItem; avai
       <div className="min-w-0 flex-1">
         <p className="font-bold">{item.name}</p>
         <p className="text-sm text-stone-500">
-          {item.cost !== null ? `${pts(item.cost)} points` : `Win it with the ${item.badge} badge`}
+          {item.cost !== null ? leaves(item.cost) : `Win it with the ${item.badge} badge`}
           {item.cost !== null && item.badge ? `, or win it with ${item.badge}` : ""}
         </p>
       </div>
       {item.cost !== null ? (
         <button type="button" onClick={onBuy} disabled={!can || busy} className={buttonClass(can ? "primary" : "secondary", "min-w-24 shrink-0")}
-          aria-label={can ? `Buy a ${item.name} for ${item.cost} points` : `${item.name}: need ${Math.ceil(item.cost - available)} more points`}>
+          aria-label={can ? `Buy a ${item.name} for ${leaves(item.cost)}` : `${item.name}: need ${moreLeaves(item.cost - available)}`}>
           {can ? "Buy" : (<><Icon name="lock" size={16} />{Math.ceil(item.cost - available)} more</>)}
         </button>
       ) : (
@@ -435,7 +516,7 @@ function PlantCard({ plant, item, busy, onWater, onMove, onClose }: {
       )}
       <dl className="mt-4 grid grid-cols-2 gap-y-2 border-t border-line pt-3 text-[15px]">
         <dt className="text-stone-500">{plant.source === "reward" ? "Won with" : "Unlocked for"}</dt>
-        <dd className="text-right font-bold">{plant.source === "reward" ? `${plant.badge} badge` : `${pts(plant.cost)} points`}</dd>
+        <dd className="text-right font-bold">{plant.source === "reward" ? `${plant.badge} badge` : leaves(plant.cost)}</dd>
         <dt className="text-stone-500">In the garden since</dt>
         <dd className="text-right font-bold">{fmtDay(plant.planted_on)}</dd>
         {grows && (<><dt className="text-stone-500">Times watered</dt><dd className="text-right font-bold">{plant.waterings}</dd></>)}

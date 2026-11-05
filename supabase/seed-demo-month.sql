@@ -16,7 +16,8 @@
 --     bonuses, and 2 unreviewed AI flags in the last few days.
 --   * Classes improve over time, each at its own pace, so the table isn't a tie.
 --   * If the rewards migration is installed: eco challenges done through the
---     month (2 write-ups waiting for review) and a garden for every class.
+--     month (2 write-ups waiting for review) and a garden for every class
+--     (bought with leaves if the leaves migration is installed).
 --
 -- Safe to run twice: any class/day that already has a record is skipped.
 -- Closed months are skipped (their points are locked).
@@ -212,6 +213,7 @@ declare
   v_school public.schools; v_teacher uuid; v_end date; v_today date; c record; d date; v_by uuid;
   v_ch public.eco_challenges; v_claim uuid; v_n int := 0; v_g int := 0; v_item record; v_avail numeric;
   v_plot smallint; v_days int; v_stage int; v_id uuid; v_answer text;
+  v_leaves boolean := to_regclass('public.leaf_grants') is not null;   -- leaves migration installed: shop prices are in leaves
   v_answers jsonb := jsonb_build_object(
     'mystery_waste_audit', 'We sorted one classroom bin: 14 snack wrappers, 6 juice boxes and a lot of paper that could have been recycled. Idea: bring snacks in reusable tubs.',
     'no_new_buy_day', 'Nobody bought anything new today. We borrowed rulers and glue from another class and fixed a wobbly chair instead of replacing it.',
@@ -294,12 +296,14 @@ begin
     v_by := coalesce(v_by, v_teacher);
     perform 1 from public.classes where id = c.id for update;
     perform app.grant_badge_rewards(c.id, v_by);
+    if v_leaves then perform app.grant_badge_leaves(c.id); end if;
     select available into v_avail from app.garden_balance(c.id);
+    if v_leaves then v_avail := floor(v_avail * 0.7); end if;          -- keep about 100 leaves to buy something live in a demo
     for v_item in select gi.*, n from public.garden_items gi
                    cross join generate_series(1, 2) n
                    where gi.school_id = v_school.id and gi.active and gi.cost is not null
                      and gi.code in ('marigold','sunflower','seedling','bush','bench','butterfly','bulbul','neem')
-                     and (n = 1 or gi.cost <= 150)                          -- a second flower now and then
+                     and (n = 1 or gi.cost <= case when v_leaves then 40 else 150 end)   -- a second flower now and then
                    order by n, abs(hashtext(gi.code || c.name)) loop
       continue when v_item.cost > v_avail * 0.95;
       v_plot := app.free_plot(c.id);
@@ -312,7 +316,8 @@ begin
       returning id into v_id;
       insert into public.garden_events (school_id, class_id, plant_id, kind, detail, event_date, actor_id, at)
       values (v_school.id, c.id, v_id, 'bought',
-              format('%s %s for %s points', case when v_item.grows then 'Planted a' else 'Added a' end, v_item.name, v_item.cost),
+              format('%s %s for %s %s', case when v_item.grows then 'Planted a' else 'Added a' end, v_item.name, v_item.cost,
+                     case when v_leaves then 'leaves' else 'points' end),
               v_end - v_days, v_by, (v_end - v_days + time '13:30') at time zone v_school.timezone);
       if v_stage = 3 and v_item.grows then
         insert into public.garden_events (school_id, class_id, plant_id, kind, detail, event_date, actor_id, at)

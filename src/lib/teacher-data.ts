@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { SeriesRow } from "@/lib/types";
+import type { LeafRates } from "@/lib/rewards";
 
 async function call<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const supabase = await createClient();
@@ -120,7 +121,7 @@ export const teacherFlags = (from: string, to: string) => call<FlagRow[]>("teach
 /* ---------------------------------------------------------- rewards ---- */
 
 export type TeacherChallenge = {
-  id: string; code: string; title: string; summary: string; steps: string; place: string | null; points: number;
+  id: string; code: string; title: string; summary: string; steps: string; place: string | null; points: number; leaves: number;
   kind: "instant" | "review"; repeat_every: "day" | "week" | "month" | "once"; token: string; sort: number; active: boolean;
   done_this_month: number; pending: number;
 };
@@ -129,13 +130,17 @@ export type ClaimRow = {
   status: "approved" | "pending" | "rejected" | "voided"; answer: string | null; points: number; submitted_at: string;
   reviewed_by_name: string | null; review_note: string | null;
 };
+/** earned / spent / available are LEAVES. */
 export type GardenSummary = { class_id: string; class_name: string; earned: number; spent: number; available: number; plants: number; grown: number };
 export type RewardsConfig = {
-  tiers: Array<{ code: string; name: string; tagline: string; threshold: number; reward_name: string | null }>;
-  items: Array<{ code: string; name: string; kind: string; cost: number | null; active: boolean }>;
+  tiers: Array<{ code: string; name: string; tagline: string; threshold: number; leaves: number; reward_name: string | null }>;
+  items: Array<{ code: string; name: string; kind: string; cost: number | null; active: boolean }>; // cost in leaves
+  rates: LeafRates;
 };
+export type LeafGrantRow = { id: string; granted_at: string; class_name: string; leaves: number; reason: string; by_name: string | null };
 
 export const teacherChallenges = () => call<TeacherChallenge[]>("teacher_challenges");
 export const teacherChallengeClaims = (from: string, to: string) => call<ClaimRow[]>("teacher_challenge_claims", { p_from: from, p_to: to });
 export const teacherGardens = () => call<GardenSummary[]>("teacher_gardens");
 export const rewardsConfig = () => call<RewardsConfig>("teacher_rewards_config");
+export const teacherLeafGrants = (limit = 20) => call<LeafGrantRow[]>("teacher_leaf_grants", { p_limit: limit });
