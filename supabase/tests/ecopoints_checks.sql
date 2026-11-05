@@ -444,6 +444,10 @@ end $$;
 reset role;
 
 -- 13e. Monitor and public views
+-- Expected: 7A's own bin check, plus any room check that involves 7A (depends on the day's peer rotation).
+select set_config('ecotest.ai_seen_7a', (select count(distinct a.id)::text from public.ai_checks a
+  join public.classes c on c.id in (a.class_id, a.checked_by_class_id)
+ where c.school_id = '5c000000-0000-4000-8000-00000000000a' and c.name = '7A'), true);
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
 do $$ declare t jsonb; begin
@@ -451,8 +455,8 @@ do $$ declare t jsonb; begin
   if (t -> 'bin' ->> 'plastic_items')::int <> 9 or t ->> 'challenge' is null then
     raise exception 'CHECK FAILED: 7A monitor view missing bin result or challenge: %', t;
   end if;
-  if (select count(*) from public.ai_checks) <> 1 then  -- RLS: own class's checks only (its bin check)
-    raise exception 'CHECK FAILED: monitor sees % AI checks, expected 1', (select count(*) from public.ai_checks);
+  if (select count(*) from public.ai_checks) <> current_setting('ecotest.ai_seen_7a')::int then  -- RLS: only checks involving 7A
+    raise exception 'CHECK FAILED: monitor sees % AI checks, expected %', (select count(*) from public.ai_checks), current_setting('ecotest.ai_seen_7a');
   end if;
 end $$;
 set local role anon;

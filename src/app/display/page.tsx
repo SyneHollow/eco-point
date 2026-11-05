@@ -1,6 +1,6 @@
 import { AutoRefresh, Clock } from "@/components/client";
 import { Logo } from "@/components/ui";
-import { getAiSummary, getChallenges, getChampions, getImpact, getLeaderboard, getSchool } from "@/lib/public-data";
+import { getAiSummary, getBadges, getChallenges, getChampions, getGardens, getImpact, getLeaderboard, getSchool } from "@/lib/public-data";
 import { fmtLongDay, fmtMonth, periodRange, weekStart } from "@/lib/dates";
 import { DisplaySlides } from "./slides";
 
@@ -12,13 +12,15 @@ export default async function DisplayPage() {
   if (!school) return <p className="p-8">School not set up.</p>;
   const month = periodRange("month", school.today);
   const week = periodRange("week", school.today);
-  const [monthRows, weekRows, impact, champions, ai, challenges] = await Promise.all([
+  const [monthRows, weekRows, impact, champions, ai, challenges, badges, gardens] = await Promise.all([
     getLeaderboard(month.from, month.to),
     getLeaderboard(week.from, week.to),
     getImpact(month.from, month.to),
     getChampions(),
     getAiSummary(month.from, month.to),
     getChallenges(weekStart(school.today)),
+    getBadges(month.from),
+    getGardens(),
   ]);
 
   return (
@@ -49,9 +51,12 @@ export default async function DisplayPage() {
         champion={champions[0] ?? null}
         ai={ai}
         challenges={challenges}
+        badges={badges}
+        gardens={gardens}
       />
       <footer className="flex justify-between gap-8 px-12 py-5 text-lg text-leaf-200">
         <span>Points come from daily class checks, fair peer checks, AI-checked bin photos and teacher bonuses.</span>
+        <span className="shrink-0">Built with Nexayra Technologies</span>
       </footer>
     </div>
   );

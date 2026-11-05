@@ -8,7 +8,7 @@ import { addDays, fmtLongDay, periodRange } from "@/lib/dates";
 import { pts } from "@/lib/format";
 import { getLeaderboard } from "@/lib/public-data";
 import { requireTeacher } from "@/lib/session";
-import { series, teacherFlags, teacherToday } from "@/lib/teacher-data";
+import { series, teacherChallengeClaims, teacherFlags, teacherToday } from "@/lib/teacher-data";
 import { awardPoints } from "./actions";
 
 export const metadata = { title: "Teacher dashboard" };
@@ -16,12 +16,14 @@ export const metadata = { title: "Teacher dashboard" };
 export default async function TeacherDashboard() {
   const me = await requireTeacher();
   const month = periodRange("month", me.today);
-  const [today, board, trend, flags] = await Promise.all([
+  const [today, board, trend, flags, claims] = await Promise.all([
     teacherToday(),
     getLeaderboard(month.from, month.to),
     series(addDays(me.today, -29), me.today),
     teacherFlags(addDays(me.today, -13), me.today),
+    teacherChallengeClaims(me.today, me.today),
   ]);
+  const waiting = claims.filter((c) => c.status === "pending").length;
   const submitted = today.filter((c) => c.entry_submitted).length;
   const checked = today.filter((c) => c.checked).length;
   const noPin = today.filter((c) => !c.has_monitor).length;
@@ -48,6 +50,12 @@ export default async function TeacherDashboard() {
         <Banner tone="flag">
           {flags.length} thing{flags.length === 1 ? "" : "s"} flagged by the AI referee in the last two weeks.{" "}
           <Link href="/teacher/ai" className="underline underline-offset-4">Review the flags</Link>
+        </Banner>
+      )}
+      {waiting > 0 && (
+        <Banner icon="qr">
+          {waiting} eco challenge write-up{waiting === 1 ? " is" : "s are"} waiting for you.{" "}
+          <Link href="/teacher/challenges" className="underline underline-offset-4">Check them</Link>
         </Banner>
       )}
       {noPin > 0 && (

@@ -3,8 +3,10 @@ import { PublicHeader } from "@/components/public-header";
 import { LeaderList, Podium } from "@/components/leaderboard";
 import { Banner, cx, Footer, SdgChips } from "@/components/ui";
 import { Icon } from "@/components/icons";
-import { getAiSummary, getChampions, getImpact, getLeaderboard, getSchool, rerank } from "@/lib/public-data";
-import { fmtDay, fmtLongDay, fmtMonth, periodRange, type Period } from "@/lib/dates";
+import { getAiSummary, getBadges, getChampions, getImpact, getLeaderboard, getSchool, rerank } from "@/lib/public-data";
+import { BadgeEmblem } from "@/components/badges";
+import { TeamTile } from "@/components/ui";
+import { fmtDay, fmtLongDay, fmtMonth, monthStart, periodRange, type Period } from "@/lib/dates";
 import { num, pct, plural, pts } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +21,13 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   if (!school) return <p className="p-8">School not set up.</p>;
 
   const range = periodRange(period, school.today);
-  const [all, impact, champions, ai] = await Promise.all([
+  const badgeMonth = period === "last-month" ? range.from : monthStart(school.today);
+  const [all, impact, champions, ai, badgesAll] = await Promise.all([
     getLeaderboard(range.from, range.to),
     getImpact(range.from, range.to),
     getChampions(),
     getAiSummary(range.from, range.to),
+    getBadges(badgeMonth),
   ]);
   const grades = [...new Set(all.map((r) => r.grade))].sort((a, b) => a - b);
   const grade = grades.includes(Number(sp.grade)) ? Number(sp.grade) : null;
@@ -147,6 +151,25 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             </section>
           )}
         </div>
+
+        <section className="rounded-xl border border-line bg-white p-5" aria-labelledby="badges-title">
+          <h2 id="badges-title" className="text-lg font-bold">Badges for {fmtMonth(badgeMonth)}</h2>
+          <p className="mt-1 text-[15px] text-stone-500">A class earns a badge when its points in the month reach the target. Every class can earn every badge.</p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(grade ? badgesAll.filter((b) => b.grade === grade) : badgesAll).map((b) => (
+              <li key={b.class_id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                <TeamTile name={b.class_name} size="sm" />
+                {b.tier_code ? <BadgeEmblem code={b.tier_code} size={44} /> : <BadgeEmblem code="tiny_sprout" earned={false} size={44} />}
+                <div className="min-w-0">
+                  <p className="font-bold">{b.tier_name ?? "No badge yet"}</p>
+                  <p className="text-sm text-stone-500">
+                    {b.next_threshold !== null ? `${Math.ceil(b.next_threshold - b.points)} more for ${b.next_name}` : "Every badge earned"}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
       <Footer />
     </>

@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Banner, cx, Footer, Logo, TeamTile, teamColor } from "@/components/ui";
+import { Banner, cx, teamColor } from "@/components/ui";
+import { BadgeEmblem } from "@/components/badges";
+import { GardenScene } from "@/components/garden-art";
+import type { Garden } from "@/lib/rewards";
 import { Icon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 import { requireMonitor } from "@/lib/session";
 import { fmtDay, fmtLongDay, fmtTime } from "@/lib/dates";
 import { pts } from "@/lib/format";
-import { logout } from "../login/actions";
 import { AuditForm, EntryForm } from "./forms";
 import { PhotoCheck } from "./photo-check";
 
@@ -56,43 +58,26 @@ export default async function MonitorPage() {
   const recentMax = Math.max(1, ...recent.map((r) => r.points));
   let n = 0;
 
+  const { data: gardenData } = await supabase.rpc("my_garden");
+  const garden = (gardenData ?? null) as Garden | null;
+
   return (
     <>
-      <header className="on-dark bg-pitch text-white">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="rounded-lg">
-            <Logo dark />
-          </Link>
-          <form action={logout}>
-            <button className="flex min-h-11 items-center gap-1.5 rounded-lg px-3 font-bold text-leaf-100 hover:bg-white/10 hover:text-white">
-              <Icon name="signOut" size={18} />
-              Log out
-            </button>
-          </form>
-        </div>
-        <div className="mx-auto flex max-w-2xl items-end gap-4 px-4 pt-3 pb-6">
-          <TeamTile name={t.class.name} size="xl" />
-          <div className="min-w-0 pb-1">
-            <p className="font-semibold text-leaf-200">{fmtLongDay(t.today)}</p>
-            <h1 className="font-display text-5xl font-black">Class {t.class.name}</h1>
-            <p className="text-leaf-100">{me.display_name}</p>
-          </div>
-        </div>
-        <div className="mx-auto max-w-2xl px-4 pb-5">
-          <div className="flex items-center gap-3" role="status">
-            <div className="flex flex-1 gap-1.5" aria-hidden="true">
-              {jobs.map((done, i) => (
-                <span key={i} className={cx("h-2 flex-1 rounded-full", done ? "bg-sun-500" : "bg-white/20")} />
-              ))}
-            </div>
-            <span className="shrink-0 font-bold">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-6 px-4 py-6 lg:grid-cols-[minmax(0,42rem)_1fr]">
+      <div className="space-y-5">
+        <div className="rounded-xl border border-line bg-white px-5 py-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h1 className="text-xl font-bold">Today&apos;s jobs</h1>
+            <span className="font-bold" role="status">
               {jobsDone === jobs.length ? "All done today" : `${jobsDone} of ${jobs.length} jobs done`}
             </span>
           </div>
+          <div className="mt-3 flex gap-1.5" aria-hidden="true">
+            {jobs.map((done, i) => (
+              <span key={i} className={cx("h-2.5 flex-1 rounded-full", done ? "bg-leaf-600" : "bg-stone-100")} />
+            ))}
+          </div>
         </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6">
         {t.baseline && t.points_start_date && (
           <Banner>
             Measuring week: count honestly. This is your class&apos;s &ldquo;before&rdquo; picture. Points start on {fmtLongDay(t.points_start_date)}.
@@ -260,9 +245,54 @@ export default async function MonitorPage() {
             </div>
           </Step>
         </ol>
+      </div>
+      {garden && <SideRewards garden={garden} />}
       </main>
-      <Footer />
     </>
+  );
+}
+
+/** Right-hand column on wide screens (below the steps on phones): badge progress and a peek at the garden. */
+function SideRewards({ garden }: { garden: Garden }) {
+  const b = garden.badges;
+  const next = b.tiers.find((t) => !t.reached);
+  const got = [...b.tiers].reverse().find((t) => t.reached);
+  return (
+    <aside className="space-y-5" aria-label="Rewards">
+      <section className="rounded-xl border border-line bg-white p-5">
+        <h2 className="text-lg font-bold">Badge this month</h2>
+        <div className="mt-3 flex items-center gap-4">
+          <BadgeEmblem code={(got ?? next ?? b.tiers[0]).code} earned={!!got} size={64} />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold">{got ? got.name : "No badge yet"}</p>
+            <p className="text-stone-500">
+              <span className="font-display tabular text-2xl font-extrabold text-pitch">{pts(b.points)}</span> points this month
+            </p>
+          </div>
+        </div>
+        {next && (
+          <div className="mt-3">
+            <div className="h-2.5 overflow-hidden rounded-full bg-stone-100" aria-hidden="true">
+              <div className="h-full rounded-full bg-sun-500" style={{ width: `${Math.min(100, (b.points / next.threshold) * 100)}%` }} />
+            </div>
+            <p className="mt-1.5 text-sm text-stone-600">
+              {Math.ceil(next.threshold - b.points)} more for <strong>{next.name}</strong>
+              {next.reward_name ? `, which wins a ${next.reward_name}` : ""}.
+            </p>
+          </div>
+        )}
+      </section>
+      <Link href="/monitor/garden" className="group block overflow-hidden rounded-xl border border-line bg-white transition-colors hover:border-pitch">
+        <GardenScene uid="peek" plants={garden.plants} className="block w-full" label={`Class ${garden.class.name}'s garden`} />
+        <span className="flex items-center justify-between gap-3 px-5 py-3">
+          <span>
+            <span className="block font-bold group-hover:underline group-hover:underline-offset-4">Your class garden</span>
+            <span className="text-stone-500">{pts(garden.available)} garden points to spend</span>
+          </span>
+          <Icon name="plant" size={24} className="text-leaf-600" />
+        </span>
+      </Link>
+    </aside>
   );
 }
 

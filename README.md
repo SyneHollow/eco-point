@@ -17,9 +17,9 @@ Class-wise sustainability scoring for a school. Each class's two Eco Monitors re
 ## Set up a new Supabase project
 
 1. Supabase dashboard → New project.
-2. SQL Editor → paste and run `supabase/migrations/20261102000000_ecopoints.sql`, then `supabase/migrations/20261103000000_ai_checks.sql`.
+2. SQL Editor → paste and run `supabase/migrations/20261102000000_ecopoints.sql`, then `supabase/migrations/20261103000000_ai_checks.sql`, then `supabase/migrations/20261105000000_rewards.sql`.
 3. SQL Editor → paste and run `supabase/seed.sql` (school `school`, classes 7A–8D, the daily checklist).
-4. SQL Editor → paste and run `supabase/tests/ecopoints_checks.sql`. Must end with **ALL ECOPOINTS CHECKS PASSED**. It rolls itself back.
+4. SQL Editor → paste and run `supabase/tests/ecopoints_checks.sql`, then `supabase/tests/rewards_checks.sql`. They must end with **ALL ECOPOINTS CHECKS PASSED** and **ALL REWARDS CHECKS PASSED**. Both roll themselves back.
 5. Copy `.env.example` to `.env.local` and fill in the URL, publishable key and secret key (Project Settings → API Keys), and the Gemini API key (Google AI Studio → Get API key; paid tier for real school photos).
 6. `npm install`, then `node scripts/create-teacher.mjs` (asks for name, email, password).
 7. `npm run dev` → http://localhost:3000 → log in as the teacher → Classes & PINs → set a PIN per class.

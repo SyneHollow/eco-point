@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { LeaderList, Podium } from "@/components/leaderboard";
 import { cx, TeamTile } from "@/components/ui";
+import { BadgeEmblem } from "@/components/badges";
+import { GardenScene } from "@/components/garden-art";
+import type { BadgeRow, GardenPlot } from "@/lib/rewards";
 import { Icon } from "@/components/icons";
 import type { AiSummary, Champion, Impact, LeaderRow } from "@/lib/types";
 import { fmtMonth } from "@/lib/dates";
@@ -18,6 +21,8 @@ export function DisplaySlides({
   champion,
   ai,
   challenges,
+  badges,
+  gardens,
 }: {
   monthLabel: string;
   monthRows: LeaderRow[];
@@ -26,6 +31,8 @@ export function DisplaySlides({
   champion: Champion | null;
   ai: AiSummary | null;
   challenges: Array<{ class_id: string; class_name: string; text: string }>;
+  badges: BadgeRow[];
+  gardens: GardenPlot[];
 }) {
   const slides: Array<{ key: string; node: React.ReactNode }> = [
     {
@@ -85,6 +92,49 @@ export function DisplaySlides({
           <p className="mt-10 text-3xl text-leaf-200">
             {plural(impact.eco_actions, "eco action")} logged from {plural(impact.entries, "class check")}
           </p>
+        </Slide>
+      ),
+    });
+  }
+  if (badges.some((b) => b.tier_code)) {
+    slides.push({
+      key: "badges",
+      node: (
+        <Slide title={`${monthLabel} badges`}>
+          <ul className="grid grid-cols-4 gap-6">
+            {badges.slice(0, 8).map((b) => (
+              <li key={b.class_id} className="flex items-center gap-5 rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+                <BadgeEmblem code={b.tier_code ?? "tiny_sprout"} earned={!!b.tier_code} size={110} />
+                <div>
+                  <TeamTile name={b.class_name} size="sm" />
+                  <div className="mt-2 text-3xl leading-tight font-bold">{b.tier_name ?? "Not yet"}</div>
+                  <div className="text-xl text-leaf-200">{b.next_threshold !== null ? `${Math.ceil(b.next_threshold - b.points)} to ${b.next_name}` : "Top badge!"}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Slide>
+      ),
+    });
+  }
+  if (gardens.length > 0) {
+    const classes = [...new Map(monthRows.map((r) => [r.class_id, r.class_name])).entries()].sort((a, b) => a[1].localeCompare(b[1], "en", { numeric: true }));
+    slides.push({
+      key: "gardens",
+      node: (
+        <Slide title="Class gardens">
+          <ul className="grid grid-cols-4 gap-6">
+            {classes.slice(0, 8).map(([id, name]) => (
+              <li key={id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05]">
+                <GardenScene uid={`tv-${id}`} still plants={gardens.filter((g) => g.class_id === id).map((g) => ({ item: g.item_code, plot: g.plot, stage: g.stage }))}
+                  className="block w-full" label={`Class ${name}'s garden`} />
+                <div className="flex items-center gap-3 px-4 py-2.5">
+                  <TeamTile name={name} size="xs" />
+                  <span className="text-xl font-bold">{gardens.filter((g) => g.class_id === id).length} plants</span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Slide>
       ),
     });

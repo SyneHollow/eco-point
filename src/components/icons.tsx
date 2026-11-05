@@ -30,6 +30,15 @@ import { LockSimpleIcon } from "@phosphor-icons/react/dist/ssr/LockSimple";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/ssr/CheckCircle";
 import { ClockIcon } from "@phosphor-icons/react/dist/ssr/Clock";
 import { ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
+import { QrCodeIcon } from "@phosphor-icons/react/dist/ssr/QrCode";
+import { PlantIcon } from "@phosphor-icons/react/dist/ssr/Plant";
+import { DropIcon } from "@phosphor-icons/react/dist/ssr/Drop";
+import { ArrowsOutCardinalIcon } from "@phosphor-icons/react/dist/ssr/ArrowsOutCardinal";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react/dist/ssr/ClockCounterClockwise";
+import { StorefrontIcon } from "@phosphor-icons/react/dist/ssr/Storefront";
+import { MedalIcon } from "@phosphor-icons/react/dist/ssr/Medal";
+import { SparkleIcon } from "@phosphor-icons/react/dist/ssr/Sparkle";
+import { PackageIcon } from "@phosphor-icons/react/dist/ssr/Package";
 
 export type IconName = keyof typeof ICONS;
 
@@ -63,6 +72,15 @@ const ICONS = {
   done: CheckCircleIcon,
   clock: ClockIcon,
   back: ArrowLeftIcon,
+  qr: QrCodeIcon,
+  plant: PlantIcon,
+  drop: DropIcon,
+  move: ArrowsOutCardinalIcon,
+  history: ClockCounterClockwiseIcon,
+  shop: StorefrontIcon,
+  medal: MedalIcon,
+  sparkle: SparkleIcon,
+  shed: PackageIcon,
 } satisfies Record<string, PhosphorIcon>;
 
 /** Decorative by default (hidden from screen readers). Pass `label` when the icon carries meaning on its own. */

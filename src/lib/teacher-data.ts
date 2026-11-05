@@ -116,3 +116,26 @@ export type FlagRow = { kind: "ai_mismatch" | "perfect_streak" | "generous_check
 
 export const teacherAiChecks = (from: string, to: string) => call<AiCheckRow[]>("teacher_ai_checks", { p_from: from, p_to: to });
 export const teacherFlags = (from: string, to: string) => call<FlagRow[]>("teacher_flags", { p_from: from, p_to: to });
+
+/* ---------------------------------------------------------- rewards ---- */
+
+export type TeacherChallenge = {
+  id: string; code: string; title: string; summary: string; steps: string; place: string | null; points: number;
+  kind: "instant" | "review"; repeat_every: "day" | "week" | "month" | "once"; token: string; sort: number; active: boolean;
+  done_this_month: number; pending: number;
+};
+export type ClaimRow = {
+  id: string; claim_date: string; class_name: string; challenge_title: string; kind: "instant" | "review";
+  status: "approved" | "pending" | "rejected" | "voided"; answer: string | null; points: number; submitted_at: string;
+  reviewed_by_name: string | null; review_note: string | null;
+};
+export type GardenSummary = { class_id: string; class_name: string; earned: number; spent: number; available: number; plants: number; grown: number };
+export type RewardsConfig = {
+  tiers: Array<{ code: string; name: string; tagline: string; threshold: number; reward_name: string | null }>;
+  items: Array<{ code: string; name: string; kind: string; cost: number | null; active: boolean }>;
+};
+
+export const teacherChallenges = () => call<TeacherChallenge[]>("teacher_challenges");
+export const teacherChallengeClaims = (from: string, to: string) => call<ClaimRow[]>("teacher_challenge_claims", { p_from: from, p_to: to });
+export const teacherGardens = () => call<GardenSummary[]>("teacher_gardens");
+export const rewardsConfig = () => call<RewardsConfig>("teacher_rewards_config");

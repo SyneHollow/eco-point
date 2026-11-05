@@ -2,6 +2,7 @@ import "server-only";
 import { createPublicClient } from "@/lib/supabase/server";
 import { SCHOOL_SLUG } from "@/lib/config";
 import type { AiSummary, Champion, Impact, LeaderRow, School } from "@/lib/types";
+import type { BadgeRow, BadgeTierPublic, GardenPlot } from "@/lib/rewards";
 
 // Public (no login) reads. Each RPC returns aggregates only.
 
@@ -57,5 +58,25 @@ export async function getAiSummary(from: string, to: string): Promise<AiSummary 
 export async function getChallenges(weekStart: string): Promise<Array<{ class_id: string; class_name: string; text: string }>> {
   const { data, error } = await createPublicClient().rpc("get_challenges", { p_slug: SCHOOL_SLUG, p_week_start: weekStart });
   if (error) throw new Error(`get_challenges: ${error.message}`);
+  return data ?? [];
+}
+
+/* ---------------------------------------------------------- rewards ---- */
+
+export async function getBadges(month: string): Promise<BadgeRow[]> {
+  const { data, error } = await createPublicClient().rpc("get_badges", { p_slug: SCHOOL_SLUG, p_month: month });
+  if (error) throw new Error(`get_badges: ${error.message}`);
+  return (data ?? []).map((r: BadgeRow) => ({ ...r, points: Number(r.points) }));
+}
+
+export async function getBadgeTiers(): Promise<BadgeTierPublic[]> {
+  const { data, error } = await createPublicClient().rpc("get_badge_tiers", { p_slug: SCHOOL_SLUG });
+  if (error) throw new Error(`get_badge_tiers: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getGardens(): Promise<GardenPlot[]> {
+  const { data, error } = await createPublicClient().rpc("get_gardens", { p_slug: SCHOOL_SLUG });
+  if (error) throw new Error(`get_gardens: ${error.message}`);
   return data ?? [];
 }

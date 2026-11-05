@@ -30,11 +30,18 @@ EcoPoints is a league between classes, so it looks like one: each class is a tea
 - Buttons (`buttonClass`): ≥ 44px tall; primary has a darker bottom edge and moves 1px when pressed. Variants: `primary`, `secondary`, `light` (on dark), `ghostDark`, `sun`, `danger`.
 - Inputs (`inputClass`): 16px text (phones don't zoom), 1.5px border at 4.9:1.
 
+## Garden and badge art
+- All hand-drawn SVG in `components/garden-art.tsx` and `components/badges.tsx`; no image files, no copied artwork. Plants stand on (0,0) and grow upward.
+- UAE-rooted items on purpose: Ghaf (national tree), date palm, Sidr, desert rose, white-eared bulbul.
+- Each badge tier has its own **shape** (circle, shield, drop, hexagon, star rosette, ringed planet) so they differ without colour; locked = grey with a lock.
+- Previews (Today page, teacher page, TV) crop to the garden and hide empty spots; the interactive garden shows every spot because they're tap targets.
+- Garden tap targets are layered: plant bodies first, then every soil spot on top, so tapping a spot always means that spot (rows overlap in depth).
+
 ## Rules
 - **No emoji, no "→", no " · " joiners, no ALL-CAPS labels, no soft grey shadows.** These made v1 look generated.
 - Gold means first place. Don't use it for decoration or general buttons.
 - Numbered markers only for real sequences (the monitor's steps are one).
-- One motion moment: the podium rising on load. Everything else is feedback to a tap. `prefers-reduced-motion` turns animations off (globals.css).
+- One motion moment per screen: the podium rising on load. The **garden is the exception**: it is a living world (drifting clouds, turning sun, fluttering butterflies, a bobbing bulbul, plants growing when watered). Everything else is feedback to a tap. `prefers-reduced-motion` turns all of it off (globals.css).
 - Every dark surface gets `className="on-dark"` so the focus ring turns gold.
 - Monitor screens: big targets (56px steppers and Yes/No), one job per panel, plain words a 12-year-old understands.
 - TV (`/display`): must fit 1920×1080 with no scrolling; the page is locked to the screen height.

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { monitorEmail } from "@/lib/supabase/admin";
 import type { ActionState } from "@/lib/session";
+import { safeNext } from "@/lib/next-path";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,7 +23,7 @@ export async function loginMonitor(_prev: ActionState, fd: FormData): Promise<Ac
     await supabase.auth.signOut();
     return { error: "This login isn't set up for EcoPoints. Ask your teacher." };
   }
-  redirect("/monitor");
+  redirect(safeNext(fd.get("next")) ?? "/monitor");
 }
 
 export async function loginTeacher(_prev: ActionState, fd: FormData): Promise<ActionState> {

@@ -2,17 +2,20 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ActionForm } from "@/components/client";
 import { cx, Field, Footer, inputClass, Logo, teamColor } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { getClasses, getSchool } from "@/lib/public-data";
 import { getMe } from "@/lib/session";
 import { loginMonitor, loginTeacher } from "./actions";
+import { safeNext } from "@/lib/next-path";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Log in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ as?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ as?: string; next?: string }> }) {
   const me = await getMe();
-  if (me) redirect(me.role === "teacher" ? "/teacher" : "/monitor");
-  const { as } = await searchParams;
+  const { as, next: rawNext } = await searchParams;
+  const next = safeNext(rawNext);
+  if (me) redirect(me.role === "teacher" ? "/teacher" : (next ?? "/monitor"));
   const teacher = as === "teacher";
   const [school, classes] = await Promise.all([getSchool(), getClasses()]);
   const tab = (active: boolean) =>
@@ -61,6 +64,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               resetOnSuccess={false}
               buttonClassName="w-full min-h-14 text-lg"
             >
+              {next && <input type="hidden" name="next" value={next} />}
+              {next?.startsWith("/c/") && (
+                <p className="flex items-start gap-2 rounded-[10px] bg-leaf-50 px-3 py-2.5 font-semibold text-leaf-700">
+                  <Icon name="qr" size={20} className="mt-0.5 shrink-0" />
+                  Log in to finish the eco challenge you scanned.
+                </p>
+              )}
               <fieldset>
                 <legend className="mb-2 text-[15px] font-bold">Tap your class</legend>
                 <div className="grid grid-cols-4 gap-2">

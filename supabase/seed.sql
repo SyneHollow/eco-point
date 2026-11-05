@@ -30,3 +30,10 @@ select s.id, a.code, a.label, a.help, a.input_type, a.entered_by, a.max_points, 
   ) as a(code, label, help, input_type, entered_by, max_points, sdgs, sort_order, active)
  where s.slug = 'school'
 on conflict (school_id, code) do nothing;
+
+-- Rewards defaults (badges, garden shop, eco challenges). Needs migration 20261105000000_rewards.sql.
+do $$ begin
+  if to_regprocedure('app.seed_rewards(uuid)') is not null then
+    perform app.seed_rewards(id) from public.schools where slug = 'school';
+  end if;
+end $$;

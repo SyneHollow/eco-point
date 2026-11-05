@@ -1,7 +1,7 @@
 # EcoPoints: context
 
 ## What it is
-A school sustainability competition run by class, not by student. Built from the "ECOPOINTS – Class Wise Sustainability App" concept for a CBSE school (Grades 7–8), as a web-app so it works on classroom smartboards, teacher laptops, shared tablets and the corridor screen with nothing to install.  The students own the concept, criteria, data collection and analysis.
+A school sustainability competition run by class, not by student. Built from the "ECOPOINTS – Class Wise Sustainability App" concept for a CBSE school (Grades 7–8), as a web-app so it works on classroom smartboards, teacher laptops, shared tablets and the corridor screen with nothing to install. Built by Nexayra Technologies and credited openly ("Built with Nexayra Technologies" in the footer). The students own the concept, criteria, data collection and analysis.
 
 ## Design decisions (and why)
 | Decision | Why |
@@ -32,12 +32,22 @@ A school sustainability competition run by class, not by student. Built from the
 ## UI ("match day" redesign, 4 Nov 2026)
 Each class is a team with a fixed colour; standings look like a scoreboard; the monitor's day is a numbered 1–4 timeline. Fonts: Big Shoulders Display (scores, titles) + Atkinson Hyperlegible Next (everything else), self-hosted. Icons: Phosphor via `src/components/icons.tsx`. Full rules and tokens: **`docs/DESIGN.md`**. Teacher area: grouped sidebar on desktop, Menu disclosure on phones. Monitor login: tap a class tile (radio inputs), then the PIN.
 
+## Rewards (added 5 Nov 2026, migration `20261105000000_rewards.sql`)
+| Feature | What it does | Where |
+|---|---|---|
+| **Monthly badges** | Six tiers (Tiny Sprout 100 · Green Keeper 200 · Aqua Guardian 350 · Earth Protector 500 · Eco Legend 650 · Planet Pioneer 800 points in one calendar month; teacher-editable, must stay in order). Computed live from the ledger. The first time a class reaches a tier, it wins that tier's garden item (seedling, butterfly, lotus pond, desert rose, Sidr, Golden Ghaf). | `badge_tiers`, `get_badges`, `app.class_badges`, `app.grant_badge_rewards`; `components/badges.tsx`, `badge-shelf.tsx` |
+| **Class garden** | One garden per **class** (no student accounts by design). Garden points = all points ever earned − points spent; spending never touches the leaderboard or badges. 18 spots (3 rows); full garden → new items wait in the "shed". Plants grow seed → sprout → young → fully grown, one stage per day they're watered. Plants are never removed. Shop prices teacher-editable. | `garden_items`, `garden_plants`, `garden_events`, `my_garden`, `garden_buy/water/move`; `/monitor/garden`, `components/garden-art.tsx` |
+| **QR eco challenges** | Printable A4 posters with a QR code → `/c/<token>` → login if needed → challenge page. **instant** (recycle, refill, switch off: points on confirm, once a day, only reachable by scanning) and **review** (8 class projects: the class writes what it found, a teacher approves). Once per day/week/month/ever per class. Teacher can send back (with a reason) or void (points reversed). No challenges during the measuring week. | `eco_challenges`, `challenge_claims`, `claim_challenge`, `review_challenge_claim`, `void_challenge_claim`; `/monitor/challenges`, `/teacher/challenges`, `/teacher/challenges/print` |
+
+Naming: `class_challenges` = the AI-drafted **weekly** challenge text (AI migration). `eco_challenges` = the **QR** challenges. Different things.
+
 ## Data model (supabase/migrations)
-`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges`.
+`schools` · `classes` · `profiles` (teacher | monitor, linked to auth.users) · `actions` (the checklist) · `daily_entries` + `entry_values` · `peer_audits` + `audit_values` · `points_ledger` (append-only; sources daily, audit, ai, bonus, adjustment, reversal) · `month_closures` · `activity_log` · `ai_checks` (results only, no images) · `class_challenges` · `badge_tiers` · `garden_items` · `garden_plants` · `garden_events` · `eco_challenges` · `challenge_claims` (ledger source `challenge`).
 
 ## Security model
 - Browser/server clients get **SELECT only** (RLS-filtered). Every write is a `SECURITY DEFINER` RPC that checks the caller's role first.
-- Anonymous visitors reach only: `public_school`, `public_classes`, `get_leaderboard`, `get_impact`, `get_champions`, `get_ai_summary`, `get_challenges` (aggregates).
+- Anonymous visitors reach only: `public_school`, `public_classes`, `get_leaderboard`, `get_impact`, `get_champions`, `get_ai_summary`, `get_challenges`, `get_badges`, `get_badge_tiers`, `get_gardens` (aggregates, no personal data).
+- Rewards tables have RLS on and **no** client grants at all: everything goes through the functions. Monitors can only touch their own class's garden and claims; spending locks the class row so a class can't double-spend.
 - The secret key is used only in `src/app/teacher/actions.ts` (create class logins, set PINs, add teachers) and `scripts/create-teacher.mjs`, always **after** `requireTeacher()`.
 - `svc_link_profile` / `svc_log` / `svc_record_ai_check` / `svc_ai_attempts_today` are executable by `service_role` only. AI results can only be written by the server, after it has checked the monitor's session and called the AI itself.
 
@@ -49,4 +59,6 @@ Each class is a team with a fixed colour; standings look like a scoreboard; the 
 - `src/app/display/*`: corridor screen · `src/app/api/export/route.ts`: CSV
 - `src/lib/ai/*`: AI provider switch, prompts, reply validation, data context for Ask EcoPoints
 - `src/app/teacher/ai/*` (AI checks & flags) · `src/app/teacher/assistant/*` (Ask EcoPoints + challenges)
-- `supabase/tests/ecopoints_checks.sql`: the rules, as tests (v1 + AI)
+- Rewards: `src/lib/rewards.ts` (types) · `src/app/monitor/{layout,tabs}.tsx` (Today / Garden / Challenges) · `src/app/monitor/garden/*` · `src/app/monitor/challenges/*` · `src/app/c/[token]` (QR landing) · `src/lib/next-path.ts` (safe return after login) · `src/app/teacher/{challenges,rewards}/*` · `src/app/teacher/rewards-actions.ts`
+- `supabase/tests/ecopoints_checks.sql`: the rules, as tests (v1 + AI) · `supabase/tests/rewards_checks.sql`: badges, gardens, challenges
+- `supabase/seed-demo-month.sql` / `seed-demo-month-undo.sql`: fake month of data for demos, and the clean-up (see GOTCHAS 25)
